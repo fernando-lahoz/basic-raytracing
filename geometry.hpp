@@ -1,4 +1,5 @@
 #include <cmath>
+#include <ranges>
 
 using Real = float;
 
@@ -7,8 +8,8 @@ class Vector
 protected:
     Real values[4];
 
-    Vector(Real x, Real y, Real z, Real pointOrDirection)
-        : values{x, y, z, pointOrDirection}
+    Vector(Real x, Real y, Real z, Real p)
+        : values{x, y, z, p}
     {}
 
 public:
@@ -27,14 +28,6 @@ public:
     }
 };
 
-Real module(const Vector v)
-{
-    return std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-}
-
-
-
-
 class Point : public Vector
 {
 public:
@@ -44,7 +37,7 @@ public:
 
     Point(Real x, Real y, Real z)
         : Vector{x, y, z, 1}
-    {}
+    {}    
 };
 
 class Direction : public Vector
@@ -59,7 +52,7 @@ public:
     {}
 
     // d + p = p
-    Point operator+(const Point& p) {
+    Point operator+(Point p) {
         Direction &d = *this;
         return {d[0] + p[0], d[1] + p[1], d[2] + p[2]};
     }
@@ -71,44 +64,41 @@ public:
     }
 };
 
+Real norm(Direction d)
+{
+    return std::sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+}
+
 // Suma de direcciones: d + d = d
-Direction operator+( const Direction& d1, const Direction& d2) {
+Direction operator+(Direction d1, Direction d2) {
     return {d1[0] + d2[0], d1[1] + d2[1], d1[2] + d2[2]};
 }
 
 // Resta de puntos: p - q = d
-Direction operator-(const Point& p, const Point& q) {
+Direction operator-(Point p, Point q) {
     return {p[0] - q[0], p[1] - q[1], p[2] - q[2]};
 }
 
 // Producto escalar
-Real dot(const Direction& u, const Direction& v)
+Real dot(Direction u, Direction v)
 {
     return u[0]*v[0] + u[0]*v[0] + u[2]*v[2];
 }
 
 // Producto vectorial
-Direction cross(const Direction& u, const Direction& v)
+Direction cross(Direction u, Direction v)
 {
     return {u[1]*v[2] - u[2]*v[1], u[2]*v[0] - u[0]*v[2], u[0]*v[1] - u[1]*v[0]};
 }
 
-
 void makeIdentity(Real m[4][4])
 {
-    for (int i = 0; i < 4; ++i)
-    {
-        for (int j = 0; j < 4; ++j)
-        {
+    for (auto i : std::views::iota(0, 4))
+        for (auto j : std::views::iota(0, 4))
             if (i == j)
-            {
                 m[i][j] = 1;
-            }
-            else {
+            else
                 m[i][j] = 0;
-            }
-        }
-    }
 }
 
 class Transformation
@@ -123,9 +113,18 @@ public:
         makeIdentity(matrix);
     }
 
-    void rotateX(Real alpha)
+    [[maybe_unused]] Transformation& translate(Direction t)
     {
-        
+        matrix[0][3] += t[0];
+        matrix[1][3] += t[1];
+        matrix[2][3] += t[2]; 
+
+        return *this;
+    }
+
+    [[maybe_unused]] Transformation& rotateX(Real alpha)
+    {
+        return *this;
     }
 
 };
