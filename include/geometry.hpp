@@ -57,13 +57,14 @@ Real dot(Direction u, Direction v);
 // Producto vectorial
 Direction cross(Direction u, Direction v);
 
-void makeIdentity(Real m[4][4]);
 class Transformation
 {
 private:
     Real matrix[4][4];
 
-    void multiplyFromLeftBy(const Real lMatrix[4][4]);
+    static void makeIdentity(Real m[4][4]);
+
+    static void multiplyFromLeftBy(const Real lMatrix[4][4]);
 
 public:
     Transformation();
