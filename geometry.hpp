@@ -1,5 +1,6 @@
 #include <cmath>
 #include <ranges>
+#include <iostream>
 
 using Real = float;
 
@@ -113,6 +114,13 @@ public:
         makeIdentity(matrix);
     }
 
+    Transformation(Real other[4][4])
+    {
+        for (auto i : std::views::iota(0, 4))
+            for (auto j : std::views::iota(0, 4))
+                matrix[i][j] = other[i][j];
+    }
+
     [[maybe_unused]] Transformation& translate(Direction t)
     {
         matrix[0][3] += t[0];
@@ -122,9 +130,80 @@ public:
         return *this;
     }
 
-    [[maybe_unused]] Transformation& rotateX(Real alpha)
+    [[maybe_unused]] Transformation& scale(Real sx, Real sy, Real sz)
     {
+        for (auto j : std::views::iota(0, 4))
+        {
+            matrix[0][j] *= sx;
+            matrix[1][j] *= sy;
+            matrix[2][j] *= sz;
+        }
+
         return *this;
     }
 
+    [[maybe_unused]] Transformation& rotateX(Real alpha)
+    {
+        for (auto j : std::views::iota(0, 4))
+        {
+            Real m1j = matrix[1][j];
+            Real m2j = matrix[2][j];
+
+            matrix[1][j] = std::cos(alpha) * m1j - std::sin(alpha) * m2j;
+            matrix[2][j] = std::sin(alpha) * m1j + std::cos(alpha) * m2j;
+        }
+
+        return *this;
+    }
+
+    [[maybe_unused]] Transformation& rotateX(Real alpha)
+    {
+        for (auto j : std::views::iota(0, 4))
+        {
+            Real m0j = matrix[0][j];
+            Real m2j = matrix[2][j];
+
+            matrix[0][j] = std::cos(alpha) * m0j + std::sin(alpha) * m2j;
+            matrix[2][j] = -std::sin(alpha) * m0j + std::cos(alpha) * m2j;
+        }
+
+        return *this;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const Transformation& t);
 };
+
+std::ostream& operator<<(std::ostream& os, const Transformation& t)
+    {
+        for (auto i : std::views::iota(0, 4))
+            for (auto j : std::views::iota(0, 4))
+                os << t.matrix[i][j];
+        return os;
+    }
+
+
+void getMatrix(Real matrix[4][4])
+{
+    for (auto i : std::views::iota(0, 4))
+        for (auto j : std::views::iota(0, 4))
+            std::cin >> matrix[i][j];
+}
+
+#include <numbers>
+
+const Real PI = std::numbers::pi_v<Real>;
+
+int main()
+{
+    Real matrix[4][4];
+    getMatrix(matrix);
+
+    Real x, y, z;
+    std::cin >> x >> y >> z;
+
+    Transformation T {matrix};
+    Direction d {x, y, z};
+    T.translate(d).scale(x, y, z).rotateX(PI);
+
+    std::cout << T;
+}
