@@ -3,6 +3,8 @@
 #include <cmath>
 #include <ranges>
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 
 using Real = float;
 
@@ -39,8 +41,11 @@ public:
     // d + p = p
     Point operator+(Point p);
 
-    // d + k = p
-    Point operator*(Real k);
+    // d * k = p
+    Direction operator*(Real k);
+
+    // d / k = p
+    Direction operator/(Real k);
 };
 
 Real norm(Direction d);
@@ -64,7 +69,7 @@ private:
 
     static void makeIdentity(Real m[4][4]);
 
-    static void multiplyFromLeftBy(const Real lMatrix[4][4]);
+    void multiplyFromLeftBy(const Real lMatrix[4][4]);
 
 public:
     Transformation();
@@ -84,6 +89,8 @@ public:
     [[maybe_unused]] Transformation& apply(const Transformation& t);
 
     [[maybe_unused]] Transformation& changeBase(Direction u, Direction v, Direction w, Point o);
+
+    [[maybe_unused]] Transformation& revertBase(Direction u, Direction v, Direction w, Point o);
 
     friend std::ostream& operator<<(std::ostream& os, const Transformation& t);
 };

@@ -19,7 +19,7 @@ Real Vector::operator[](int index) const
 }
 
 Point::Point()
-    : Vector{}
+    : Vector{0, 0, 0, 1}
 {}
 
 Point::Point(Real x, Real y, Real z)
@@ -27,7 +27,7 @@ Point::Point(Real x, Real y, Real z)
 {}    
 
 Direction::Direction()
-    : Vector{}
+    : Vector{0, 0, 0, 0}
 {}
 
 Direction::Direction(Real x, Real y, Real z)
@@ -40,10 +40,16 @@ Point Direction::operator+(Point p) {
     return {d[0] + p[0], d[1] + p[1], d[2] + p[2]};
 }
 
-// d + k = p
-Point Direction::operator*(Real k) {
+// d * k = p
+Direction Direction::operator*(Real k) {
     Direction &d = *this;
     return {d[0] * k, d[1] * k, d[2] * k};
+}
+
+// d / k = p
+Direction Direction::operator/(Real k) {
+    Direction &d = *this;
+    return {d[0] / k, d[1] / k, d[2] / k};
 }
 
 Real norm(Direction d)
@@ -64,7 +70,7 @@ Direction operator-(Point p, Point q) {
 // Producto escalar
 Real dot(Direction u, Direction v)
 {
-    return u[0]*v[0] + u[0]*v[0] + u[2]*v[2];
+    return u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
 }
 
 // Producto vectorial
@@ -198,12 +204,52 @@ Transformation& Transformation::changeBase(Direction u, Direction v, Direction w
     return *this;
 }
 
+// Inversa por adjuntos
+Transformation& Transformation::revertBase(Direction u, Direction v, Direction w, Point o)
+{
+    auto getCofactorFrom = [](Direction y, Direction z)
+    {
+        return Direction { y[1] * z[2] - y[2] * z[1],
+                           y[2] * z[0] - y[0] * z[2],
+                           y[0] * z[1] - y[1] * z[0] };
+    };
+
+    auto dotP = [](Point p, Direction d) { return p[0]*d[0] + p[1]*d[1] + p[2]*d[2]; };
+
+    Direction uI = getCofactorFrom(v, w);
+    Direction vI = getCofactorFrom(w, u);
+    Direction wI = getCofactorFrom(u, v);
+
+    uI[3] = - dotP(o, uI);
+    vI[3] = - dotP(o, vI);
+    wI[3] = - dotP(o, wI);
+
+    Real det = dot(u, uI);
+    
+    Real trasposed[4][4] {};
+    for (auto j : std::views::iota(0, 4))
+    {
+        trasposed[0][j] = uI[j] / det;
+        trasposed[1][j] = vI[j] / det;
+        trasposed[2][j] = wI[j] / det;
+    }
+    trasposed[3][3] = 1.0f;
+
+    multiplyFromLeftBy(trasposed);
+
+    return *this;
+}
+
 std::ostream& operator<<(std::ostream& os, const Transformation& t)
 {
     for (auto i : std::views::iota(0, 4))
     {
         for (auto j : std::views::iota(0, 4))
-            os << t.matrix[i][j] << '\t';
+        {
+            std::stringstream ss;
+            ss << std::setw(10) << std::setprecision(4) << std::fixed << t.matrix[i][j];
+            os << ss.str();
+        }     
         os << '\n';
     }    
 
