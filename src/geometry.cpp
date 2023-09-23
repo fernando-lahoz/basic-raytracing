@@ -1,60 +1,52 @@
 #include "geometry.hpp"
 
-Vector::Vector(Real x, Real y, Real z, Real p)
-    : values{x, y, z, p}
-{}
-
-Vector::Vector()
-    : values{}
-{}
-
-Real& Vector::operator[](int index)
+std::istream& operator>>(std::istream& is, Vector& v)
 {
-    return values[index];
+    is >> v.values[0] >> v.values[1] >> v.values[2];
+    return is;
 }
 
-Real Vector::operator[](int index) const
+std::ostream& operator<<(std::ostream& os, Vector v)
 {
-    return values[index];
+    os << '(' << v.values[0] << ", " << v.values[1] << ", " << v.values[2] << ')';
+    return os;
 }
 
-Point::Point()
-    : Vector{0, 0, 0, 1}
-{}
-
-Point::Point(Real x, Real y, Real z)
-    : Vector{x, y, z, 1}
-{}    
-
-Direction::Direction()
-    : Vector{0, 0, 0, 0}
-{}
-
-Direction::Direction(Real x, Real y, Real z)
-    : Vector{x, y, z, 0}
-{}
-
-// d + p = p
-Point Direction::operator+(Point p) {
-    Direction &d = *this;
+Point operator+(Direction d, Point p)
+{
     return {d[0] + p[0], d[1] + p[1], d[2] + p[2]};
 }
 
+Point operator+(Point p, Direction d)
+{
+    return d + p;
+}
+
 // d * k = p
-Direction Direction::operator*(Real k) {
-    Direction &d = *this;
+Direction operator*(Real k, Direction d)
+{
     return {d[0] * k, d[1] * k, d[2] * k};
 }
 
+Direction operator*(Direction d, Real k)
+{
+    return k * d;
+}
+
 // d / k = p
-Direction Direction::operator/(Real k) {
-    Direction &d = *this;
+Direction operator/(Direction d, Real k)
+{
     return {d[0] / k, d[1] / k, d[2] / k};
 }
 
 Real norm(Direction d)
 {
     return std::sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+}
+
+Direction normalize(Direction d)
+{
+    return d / norm(d);
 }
 
 // Suma de direcciones: d + d = d
@@ -77,6 +69,54 @@ Real dot(Direction u, Direction v)
 Direction cross(Direction u, Direction v)
 {
     return {u[1]*v[2] - u[2]*v[1], u[2]*v[0] - u[0]*v[2], u[0]*v[1] - u[1]*v[0]};
+}
+
+Base::Base(Direction u, Direction v, Direction w, Point o)
+{
+    auto getCofactorFrom = [](Direction y, Direction z)
+    {
+        return Direction { y[1] * z[2] - y[2] * z[1],
+                        y[2] * z[0] - y[0] * z[2],
+                        y[0] * z[1] - y[1] * z[0] };
+    };
+
+    auto dotP = [](Point p, Direction d) { return p[0]*d[0] + p[1]*d[1] + p[2]*d[2]; };
+
+    Direction uI = getCofactorFrom(v, w);
+
+    Real det = dot(u, uI);
+
+    if (det != 0)
+    {
+        invertible = true;
+
+        Direction vI = getCofactorFrom(w, u);
+        Direction wI = getCofactorFrom(u, v);
+
+        uI[3] = - dotP(o, uI);
+        vI[3] = - dotP(o, vI);
+        wI[3] = - dotP(o, wI);
+
+        for (auto j : std::views::iota(0, 4))
+        {
+            revertMatrix[0][j] = uI[j] / det;
+            revertMatrix[1][j] = vI[j] / det;
+            revertMatrix[2][j] = wI[j] / det;
+        }
+        revertMatrix[3][3] = 1.0f;
+
+        for (auto i : std::views::iota(0, 4))
+        {
+            changeMatrix[i][0] = u[i];
+            changeMatrix[i][1] = v[i];
+            changeMatrix[i][2] = w[i];
+            changeMatrix[i][3] = o[i];
+        }
+    }
+    else
+    {
+        invertible = false;
+    }
 }
 
 void Transformation::makeIdentity(Real m[4][4])
@@ -106,11 +146,6 @@ void Transformation::multiplyFromLeftBy(const Real lMatrix[4][4])
             matrix[i][j] = sum;
         }   
     }
-}
-
-Transformation::Transformation()
-{
-    makeIdentity(matrix);
 }
 
 Transformation::Transformation(Real other[4][4])
@@ -189,55 +224,44 @@ Transformation& Transformation::apply(const Transformation& t)
     return *this;
 }
 
-Transformation& Transformation::changeBase(Direction u, Direction v, Direction w, Point o)
+Transformation& Transformation::changeBase(const Base& base)
 {
-    Real base[4][4];
-    for (auto i : std::views::iota(0, 4))
-    {
-        base[i][0] = u[i];
-        base[i][1] = v[i];
-        base[i][2] = w[i];
-        base[i][3] = o[i];
-    }
-
-    multiplyFromLeftBy(base);
+    multiplyFromLeftBy(base.changeMatrix);
     return *this;
 }
 
 // Inversa por adjuntos
-Transformation& Transformation::revertBase(Direction u, Direction v, Direction w, Point o)
+Transformation& Transformation::revertBase(const Base& base)
 {
-    auto getCofactorFrom = [](Direction y, Direction z)
-    {
-        return Direction { y[1] * z[2] - y[2] * z[1],
-                           y[2] * z[0] - y[0] * z[2],
-                           y[0] * z[1] - y[1] * z[0] };
-    };
-
-    auto dotP = [](Point p, Direction d) { return p[0]*d[0] + p[1]*d[1] + p[2]*d[2]; };
-
-    Direction uI = getCofactorFrom(v, w);
-    Direction vI = getCofactorFrom(w, u);
-    Direction wI = getCofactorFrom(u, v);
-
-    uI[3] = - dotP(o, uI);
-    vI[3] = - dotP(o, vI);
-    wI[3] = - dotP(o, wI);
-
-    Real det = dot(u, uI);
-    
-    Real trasposed[4][4] {};
-    for (auto j : std::views::iota(0, 4))
-    {
-        trasposed[0][j] = uI[j] / det;
-        trasposed[1][j] = vI[j] / det;
-        trasposed[2][j] = wI[j] / det;
-    }
-    trasposed[3][3] = 1.0f;
-
-    multiplyFromLeftBy(trasposed);
+    multiplyFromLeftBy(base.revertMatrix);
 
     return *this;
+}
+
+Point Transformation::operator*(Point p)
+{
+    auto dotP = [&](int i)
+    {
+        Real sum = 0.0f;
+        for (auto j : std::views::iota(0, 4))
+            sum += matrix[i][j] * p[j];
+        return sum;
+    };
+
+    return {dotP(0), dotP(1), dotP(2)};
+}
+
+Direction Transformation::operator*(Direction d)
+{
+    auto dotP = [&](int i)
+    {
+        Real sum = 0.0f;
+        for (auto j : std::views::iota(0, 4))
+            sum += matrix[i][j] * d[j];
+        return sum;
+    };
+
+    return {dotP(0), dotP(1), dotP(2)};
 }
 
 std::ostream& operator<<(std::ostream& os, const Transformation& t)

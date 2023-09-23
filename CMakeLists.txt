@@ -27,6 +27,7 @@ set(SubProjects
 set(Libraries
     # AÑADIR AQUÍ LAS BIBLIOTECAS
     geometry
+    planetary_station
 )
 
 foreach(Project IN LISTS SubProjects)

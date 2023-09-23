@@ -1,60 +1,84 @@
-#include <numbers>
-#include <chrono>
+#include <iostream>
+#include <tuple>
+
+#define ENDL std::cout << '\n';
 
 #include "geometry.hpp"
+#include "planetary_station.hpp"
 
-void getMatrix(Real matrix[4][4])
+auto getPlanetParams()
 {
-    for (auto i : std::views::iota(0, 4))
-        for (auto j : std::views::iota(0, 4))
-            std::cin >> matrix[i][j];
+    Direction axis;
+    Point center, refCity;
+
+    std::cout << " - Axis:";    std::cin >> axis;
+    std::cout << " - Center:";  std::cin >> center;
+    std::cout << " - City:";    std::cin >> refCity;
+
+    return std::tuple{axis, center, refCity};
 }
 
-double benchmark(int64_t times, auto lambda)
+auto getStationParams()
 {
-    auto start = std::chrono::system_clock::now();
+    Real azimuth, inclination;
 
-    for ([[maybe_unused]] int64_t x = 0; x < times; x++)
-    {
-        lambda();
-    }
+    std::cout << " - Inclination:"; std::cin >> inclination;
+    std::cout << " - Azimuth:";     std::cin >> azimuth;
 
-    auto end = std::chrono::system_clock::now();
-    return std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
+    return std::tuple{azimuth, inclination};
 }
 
-const Real PI = std::numbers::pi_v<Real>;
+void panic(std::string_view msg)
+{
+    std::cout << msg; ENDL
+    exit(1);
+}
 
 int main()
 {
-    //std::cout << "Gimme a matrix pls:\n";
+    std::cout << "Gimme planet origin";               ENDL
+    auto [axis, center, refCity] = getPlanetParams(); ENDL
 
-    //Real matrix[4][4];
-    //getMatrix(matrix);
+    auto pack = makePlanetParameterPack(center, refCity, axis);
+    if (!pack) panic("Parameters are contradictory!!");
+    Planet planet1 {pack.value()};
 
-    std::cout << "Gimme u, v, w, o:\n";
+    std::cout << "Now position of the station";       ENDL
+    auto [inclination, azimuth] = getStationParams(); ENDL
 
-    Direction u, v, w;
-    Point o;
+    PlanetaryStation station1 {planet1, inclination, azimuth};
 
-    std::cin >> u[0] >> u[1] >> u[2];
-    std::cin >> v[0] >> v[1] >> v[2];
-    std::cin >> w[0] >> w[1] >> w[2];
-    std::cin >> o[0] >> o[1] >> o[2];
+    // ------------------------------------------------------- //
 
-    
-    Transformation t {};
-    auto seconds = benchmark(1000000000, [&]()
-    {
-        t.changeBase(u, v, w, o).revertBase(u, v, w, o);
-    });
+    std::cout << "Gimme planet destiny";                 ENDL
+    auto [axis2, center2, refCity2] = getPlanetParams(); ENDL
 
-    std::cout << "\nHere you go:\n" << t << '\n';
-    std::cout << seconds << " s \n";
-    
+    auto pack2 = makePlanetParameterPack(center2, refCity2, axis2);
+    if (!pack) panic("Parameters are contradictory!!");
+    Planet planet2 {pack2.value()};
 
-    //Transformation t {};
-    //std::cout << "\nHere you go:\n" << t.revertBase(u, v, w, o) << '\n';
-    //std::cout << "\nCheck Identity:\n" << t << '\n';
+    std::cout << "Now position of the station";         ENDL
+    auto [inclination2, azimuth2] = getStationParams(); ENDL
 
+    PlanetaryStation station2 {planet2, inclination2, azimuth2};
+
+    // ------------------------------------------------------- //
+
+    Point origin = station1.getPosition(), destiny = station2.getPosition();
+    Direction dist = destiny - origin;
+
+    std::cout << "Origin station: " << origin; ENDL
+    std::cout << "Destiny station: " << destiny; ENDL
+    std::cout << "Distance: " << dist; ENDL ENDL
+
+    Transformation toOriginBase, toDestinyBase;
+    Direction distOnOrigin = toOriginBase.changeBase(station1.getLocalBase()) * dist;
+    Direction distOnDestiny = toDestinyBase.changeBase(station2.getLocalBase()) * dist;
+
+    std::cout << "Distance on origin: " << distOnOrigin; ENDL
+    std::cout << "Distance on destiny: " << distOnDestiny; ENDL
+
+    bool collision = distOnOrigin[2] <= 0.0f && distOnDestiny[2] <= 0.0f;
+    if (collision) { std::cout << "COLLISION!!!"; ENDL }
+    else { std::cout << "We're safe :)"; ENDL }
 }
