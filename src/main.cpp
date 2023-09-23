@@ -11,9 +11,9 @@ auto getPlanetParams()
     Direction axis;
     Point center, refCity;
 
-    std::cout << " - Axis:";    std::cin >> axis;
-    std::cout << " - Center:";  std::cin >> center;
-    std::cout << " - City:";    std::cin >> refCity;
+    std::cout << " - Axis: ";    std::cin >> axis;
+    std::cout << " - Center: ";  std::cin >> center;
+    std::cout << " - City: ";    std::cin >> refCity;
 
     return std::tuple{axis, center, refCity};
 }
@@ -22,10 +22,10 @@ auto getStationParams()
 {
     Real azimuth, inclination;
 
-    std::cout << " - Inclination:"; std::cin >> inclination;
-    std::cout << " - Azimuth:";     std::cin >> azimuth;
+    std::cout << " - Inclination: "; std::cin >> inclination;
+    std::cout << " - Azimuth: ";     std::cin >> azimuth;
 
-    return std::tuple{azimuth, inclination};
+    return std::tuple{inclination, azimuth};
 }
 
 void panic(std::string_view msg)
@@ -47,6 +47,21 @@ int main()
     auto [inclination, azimuth] = getStationParams(); ENDL
 
     PlanetaryStation station1 {planet1, inclination, azimuth};
+    /*
+    std::cout << "Base of planet"; ENDL
+    std::cout << planet1.getLocalBase();
+
+    Transformation B, Br;
+    B.changeBase(planet1.getLocalBase());
+    Br.revertBase(planet1.getLocalBase());
+    std::cout << "Change matrix"; ENDL
+    std::cout << B;
+    std::cout << "Check identity"; ENDL
+    std::cout << B.apply(Br);
+
+    std::cout << "Base of station"; ENDL
+    std::cout << station1.getLocalBase();
+    */
 
     // ------------------------------------------------------- //
 
@@ -54,7 +69,7 @@ int main()
     auto [axis2, center2, refCity2] = getPlanetParams(); ENDL
 
     auto pack2 = makePlanetParameterPack(center2, refCity2, axis2);
-    if (!pack) panic("Parameters are contradictory!!");
+    if (!pack2) panic("Parameters are contradictory!!");
     Planet planet2 {pack2.value()};
 
     std::cout << "Now position of the station";         ENDL
@@ -73,12 +88,12 @@ int main()
 
     Transformation toOriginBase, toDestinyBase;
     Direction distOnOrigin = toOriginBase.changeBase(station1.getLocalBase()) * dist;
-    Direction distOnDestiny = toDestinyBase.changeBase(station2.getLocalBase()) * dist;
+    Direction distOnDestiny = toDestinyBase.changeBase(station2.getLocalBase()) * (-1.0f * dist);
 
     std::cout << "Distance on origin: " << distOnOrigin; ENDL
     std::cout << "Distance on destiny: " << distOnDestiny; ENDL
 
-    bool collision = distOnOrigin[2] <= 0.0f && distOnDestiny[2] <= 0.0f;
+    bool collision = distOnOrigin[2] <= 0.0f || distOnDestiny[2] <= 0.0f;
     if (collision) { std::cout << "COLLISION!!!"; ENDL }
     else { std::cout << "We're safe :)"; ENDL }
 }

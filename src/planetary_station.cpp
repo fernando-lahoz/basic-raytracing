@@ -33,12 +33,26 @@ PlanetaryStation::PlanetaryStation(const Planet& planet, Real inclination, Real 
     Transformation t;
     position = t.rotateZ(inclination).rotateY(azimuth).revertBase(planet.local) * Point{0, 1, 0};
 
+    /*
+    Transformation Rz, Ry, Br;
+    Point p {0, 1 ,0};
+    std::cout << "north: " << p << '\n';
+    p = Rz.rotateZ(inclination) * p;
+    std::cout << "rotatedZ: " << p << '\n';
+    p = Ry.rotateY(azimuth) * p;
+    std::cout << "rotatedY: " << p << '\n';
+    p = Br.revertBase(planet.local) * p;
+    std::cout << "p: " << p << '\n';
+    */
+
     Direction i, j, k;
     Point north = planet.center + (planet.axis / 2.0f);
 
     k = normalize(position - planet.center);
-    i = normalize(cross(k, north - position));
-    j = cross(i, k);
+    i = normalize(cross(north - position, k));
+    j = cross(k, i);
+
+    local = Base{i, j, k, position};
 
     assert(local.isBase());
 }

@@ -76,8 +76,8 @@ Base::Base(Direction u, Direction v, Direction w, Point o)
     auto getCofactorFrom = [](Direction y, Direction z)
     {
         return Direction { y[1] * z[2] - y[2] * z[1],
-                        y[2] * z[0] - y[0] * z[2],
-                        y[0] * z[1] - y[1] * z[0] };
+                           y[2] * z[0] - y[0] * z[2],
+                           y[0] * z[1] - y[1] * z[0] };
     };
 
     auto dotP = [](Point p, Direction d) { return p[0]*d[0] + p[1]*d[1] + p[2]*d[2]; };
@@ -99,24 +99,41 @@ Base::Base(Direction u, Direction v, Direction w, Point o)
 
         for (auto j : std::views::iota(0, 4))
         {
-            revertMatrix[0][j] = uI[j] / det;
-            revertMatrix[1][j] = vI[j] / det;
-            revertMatrix[2][j] = wI[j] / det;
-        }
-        revertMatrix[3][3] = 1.0f;
+            changeMatrix[0][j] = uI[j] / det;
+            changeMatrix[1][j] = vI[j] / det;
+            changeMatrix[2][j] = wI[j] / det;
+            changeMatrix[3][j] = 0.0f;
+        }  
+        changeMatrix[3][3] = 1.0f;
 
         for (auto i : std::views::iota(0, 4))
         {
-            changeMatrix[i][0] = u[i];
-            changeMatrix[i][1] = v[i];
-            changeMatrix[i][2] = w[i];
-            changeMatrix[i][3] = o[i];
+            revertMatrix[i][0] = u[i];
+            revertMatrix[i][1] = v[i];
+            revertMatrix[i][2] = w[i];
+            revertMatrix[i][3] = o[i];
         }
     }
     else
     {
         invertible = false;
     }
+}
+
+std::ostream& operator<<(std::ostream& os, const Base& t)
+{
+    auto printVector = [&](std::string_view vec, int j)
+    {
+        os << vec << ": (" << t.revertMatrix[0][j]
+                   << ", " << t.revertMatrix[1][j]
+                   << ", " << t.revertMatrix[2][j] << ")\n";
+    };
+    printVector("i", 0);
+    printVector("j", 1);
+    printVector("k", 2);
+    printVector("o", 3);
+
+    return os;
 }
 
 void Transformation::makeIdentity(Real m[4][4])

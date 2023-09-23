@@ -88,7 +88,10 @@ public:
     bool isBase() { return invertible; }
 
     friend class Transformation;
+    friend std::ostream& operator<<(std::ostream& os, const Base& t);
 };
+
+std::ostream& operator<<(std::ostream& os, const Base& t);
 
 class Transformation
 {
