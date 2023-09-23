@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.0.0)
 project (inf_grafica LANGUAGES CXX)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -std=c++20 -save-temps")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -std=c++20 -save-temps -static-libstdc++")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
 
@@ -18,7 +18,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
 
 include_directories(include src)
 
-set(Executable main)
+#set(Executable main)
+set(Executable testMatrix)
 
 set(SubProjects
     #... NO DEBERÍA SER NECESARIO
@@ -53,3 +54,11 @@ foreach(Lib IN LISTS Libraries)
     # Vincular módulos
     target_link_libraries(${Executable} ${Lib}) 
 endforeach()
+
+#Inluir path distinto de libstdc++
+#set(LibStdPath libstd_path.txt)
+#if(EXISTS "${CMAKE_SOURCE_DIR}/${LibStdPath}")
+#    file(READ "${CMAKE_SOURCE_DIR}/${LibStdPath}" LIBSTD)
+#    message(STATUS "Using static lib: ${LIBSTD}")
+#    target_link_libraries(${Executable} "${LIBSTD}") 
+#endif()

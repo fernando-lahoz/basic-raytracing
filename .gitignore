@@ -3,3 +3,5 @@
 build
 bin
 *.exe
+
+libstd_path.txt

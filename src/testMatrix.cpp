@@ -3,13 +3,6 @@
 
 #include "geometry.hpp"
 
-void getMatrix(Real matrix[4][4])
-{
-    for (auto i : std::views::iota(0, 4))
-        for (auto j : std::views::iota(0, 4))
-            std::cin >> matrix[i][j];
-}
-
 double benchmark(int64_t times, auto lambda)
 {
     auto start = std::chrono::system_clock::now();
@@ -27,11 +20,6 @@ const Real PI = std::numbers::pi_v<Real>;
 
 int main()
 {
-    //std::cout << "Gimme a matrix pls:\n";
-
-    //Real matrix[4][4];
-    //getMatrix(matrix);
-
     std::cout << "Gimme u, v, w, o:\n";
 
     Direction u, v, w;
@@ -43,7 +31,7 @@ int main()
     std::cin >> o[0] >> o[1] >> o[2];
 
     
-    Transformation t {};
+    Transformation t, inv;
     Base b {u, v, w, o};
 
     if (!b.isBase())
@@ -52,9 +40,15 @@ int main()
         return 1;
     }
 
+    t.revertBase(b);
+    inv = Transformation::Inverse(t);
+
+    std::cout << "\nBase:\n" << t << '\n';
+    std::cout << "\nInverse:\n" << inv << '\n';
+
     auto seconds = benchmark(1000000000, [&]()
     {
-        t.changeBase(b).revertBase(b);
+        t.apply(inv).revertBase(b);
     });
 
     std::cout << "\nHere you go:\n" << t << '\n';

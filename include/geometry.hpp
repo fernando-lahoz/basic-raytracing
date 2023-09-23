@@ -102,10 +102,10 @@ private:
 
     void multiplyFromLeftBy(const Real lMatrix[4][4]);
 
+    Transformation(Real other[4][4]);
+
 public:
     Transformation() { makeIdentity(matrix); }
-
-    Transformation(Real other[4][4]);
 
     [[maybe_unused]] Transformation& translate(Direction d);
 
@@ -125,6 +125,20 @@ public:
 
     Point operator*(Point p);
     Direction operator*(Direction d);
+
+    class Inverse
+    {
+    private:
+        const Transformation& original;
+
+    public:
+        Inverse(const Transformation& t) : original{t} {}
+
+    private:
+        friend class Transformation;
+    };
+
+    Transformation(Inverse inv);
 
     friend std::ostream& operator<<(std::ostream& os, const Transformation& t);
 };

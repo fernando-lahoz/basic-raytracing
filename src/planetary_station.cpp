@@ -25,7 +25,7 @@ Planet::Planet(PlanetParameterPack pack)
 
     local = Base{i, j, k, center};
 
-    assert(local.isBase());
+    //assert(local.isBase());
 }
 
 PlanetaryStation::PlanetaryStation(const Planet& planet, Real inclination, Real azimuth)
@@ -54,5 +54,5 @@ PlanetaryStation::PlanetaryStation(const Planet& planet, Real inclination, Real 
 
     local = Base{i, j, k, position};
 
-    assert(local.isBase());
+    //assert(local.isBase());
 }

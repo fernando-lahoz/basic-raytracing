@@ -50,12 +50,14 @@ Direction normalize(Direction d)
 }
 
 // Suma de direcciones: d + d = d
-Direction operator+(Direction d1, Direction d2) {
+Direction operator+(Direction d1, Direction d2)
+{
     return {d1[0] + d2[0], d1[1] + d2[1], d1[2] + d2[2]};
 }
 
 // Resta de puntos: p - q = d
-Direction operator-(Point p, Point q) {
+Direction operator-(Point p, Point q)
+{
     return {p[0] - q[0], p[1] - q[1], p[2] - q[2]};
 }
 
@@ -247,11 +249,9 @@ Transformation& Transformation::changeBase(const Base& base)
     return *this;
 }
 
-// Inversa por adjuntos
 Transformation& Transformation::revertBase(const Base& base)
 {
     multiplyFromLeftBy(base.revertMatrix);
-
     return *this;
 }
 
@@ -279,6 +279,46 @@ Direction Transformation::operator*(Direction d)
     };
 
     return {dotP(0), dotP(1), dotP(2)};
+}
+
+Transformation::Transformation(Inverse inv)
+{
+    auto m = [&](int i, int j) { return inv.original.matrix[i][j]; };
+
+    auto cofactor = [&](int u, int v, int w)
+    {
+        matrix[u][0] = m(1, v) * m(2, w) - m(2, v) * m(1, w);
+        matrix[u][1] = m(2, v) * m(0, w) - m(0, v) * m(2, w);
+        matrix[u][2] = m(0, v) * m(1, w) - m(1, v) * m(0, w);
+    };
+
+    const int U = 0, V = 1, W = 2, O = 3;
+
+    cofactor(U, V, W);
+    cofactor(V, W, U);
+    cofactor(W, U, V);
+
+    auto rowDotCol = [&](int row, int col)
+    {
+        return matrix[row][0] * m(0, col) +
+               matrix[row][1] * m(1, col) +
+               matrix[row][2] * m(2, col);
+    };
+
+    Real det = rowDotCol(U, U);
+
+    matrix[U][3] = - rowDotCol(U, O) / det;
+    matrix[V][3] = - rowDotCol(V, O) / det;
+    matrix[W][3] = - rowDotCol(W, O) / det;
+
+    for (auto j : std::views::iota(0, 3))
+    {
+        matrix[U][j] /= det;
+        matrix[V][j] /= det;
+        matrix[W][j] /= det;
+        matrix[O][j] = 0.0f;
+    }  
+    matrix[3][3] = 1.0f;
 }
 
 std::ostream& operator<<(std::ostream& os, const Transformation& t)
