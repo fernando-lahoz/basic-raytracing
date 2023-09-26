@@ -2,12 +2,14 @@
 
 #include <cmath>
 #include <ranges>
-#include <iostream>
+#include <istream>
+#include <ostream>
 #include <iomanip>
 #include <sstream>
 #include <optional>
 
-using Real = float;
+#include "definitions.hpp"
+#include "macros/constructor_wrapper.hpp"
 
 class Vector
 {
@@ -19,9 +21,9 @@ protected:
 public:
     Vector() : values{} {};
 
-    Real& operator[](int index) { return values[index]; }
+    [[nodiscard]] Real& operator[](int index) { return values[index]; }
 
-    Real operator[](int index) const { return values[index]; };
+    [[nodiscard]] Real operator[](int index) const { return values[index]; };
 
     friend std::istream& operator>>(std::istream& is, Vector& v);
     friend std::ostream& operator<<(std::ostream& os, Vector v);
@@ -46,52 +48,42 @@ public:
     Direction(Real x, Real y, Real z) : Vector{x, y, z, 0} {}
 };
 
-Real norm(Direction d);
+[[nodiscard]] Real norm(Direction d);
 
-Direction normalize(Direction d);
+[[nodiscard]] Direction normalize(Direction d);
 
 // d * k = p
-Direction operator*(Real k, Direction d);
-Direction operator*(Direction d, Real k);
+[[nodiscard]] Direction operator*(Real k, Direction d);
+[[nodiscard]] Direction operator*(Direction d, Real k);
 
 // d / k = p
-Direction operator/(Direction d, Real k);
+[[nodiscard]] Direction operator/(Direction d, Real k);
 
 // d + p = p
-Point operator+(Direction d, Point p);
-Point operator+(Point p, Direction d);
+[[nodiscard]] Point operator+(Direction d, Point p);
+[[nodiscard]] Point operator+(Point p, Direction d);
 
 // Suma de direcciones: d + d = d
-Direction operator+(Direction d1, Direction d2);
+[[nodiscard]] Direction operator+(Direction d1, Direction d2);
 
 // Resta de puntos: p - q = d
-Direction operator-(Point p, Point q);
+[[nodiscard]] Direction operator-(Point p, Point q);
 
 // Producto escalar
-Real dot(Direction u, Direction v);
+[[nodiscard]] Real dot(Direction u, Direction v);
 
 // Producto vectorial
-Direction cross(Direction u, Direction v);
+[[nodiscard]] Direction cross(Direction u, Direction v);
 
-class Base
+struct Base
 {
-private:
-    Real changeMatrix[4][4];
-    Real revertMatrix[4][4];
-    bool invertible;
+    Direction u, v, w;
+    Point o;
     
-public:
-    Base() {}
-
-    Base(Direction u, Direction v, Direction w, Point o);
-
-    bool isBase() { return invertible; }
-
-    friend class Transformation;
-    friend std::ostream& operator<<(std::ostream& os, const Base& t);
+    friend std::ostream& operator<<(std::ostream& os, const Base& base);
 };
 
-std::ostream& operator<<(std::ostream& os, const Base& t);
+std::ostream& operator<<(std::ostream& os, const Base& base);
 
 class Transformation
 {
@@ -119,26 +111,14 @@ public:
 
     [[maybe_unused]] Transformation& apply(const Transformation& t);
 
-    [[maybe_unused]] Transformation& changeBase(const Base& base);
-
     [[maybe_unused]] Transformation& revertBase(const Base& base);
 
-    Point operator*(Point p);
-    Direction operator*(Direction d);
+    [[maybe_unused]] Transformation& changeBase(const Base& base);
 
-    class Inverse
-    {
-    private:
-        const Transformation& original;
+    [[nodiscard]] Point operator*(Point p);
+    [[nodiscard]] Direction operator*(Direction d);
 
-    public:
-        Inverse(const Transformation& t) : original{t} {}
-
-    private:
-        friend class Transformation;
-    };
-
-    Transformation(Inverse inv);
+    CONSTRUCTOR_WRAPPER(Transformation, Inverse)
 
     friend std::ostream& operator<<(std::ostream& os, const Transformation& t);
 };

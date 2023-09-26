@@ -16,10 +16,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${FullOutputDir}/static libs")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${FullOutputDir}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
 
-include_directories(include src)
+include_directories(include src test)
 
-#set(Executable main)
-set(Executable testMatrix)
+set(Executable main)
+#set(Executable test_base_inverse_identity)
 
 set(SubProjects
     #... NO DEBERÍA SER NECESARIO
@@ -42,8 +42,10 @@ foreach(Lib IN LISTS Libraries)
     add_library(${Lib} "src/${Lib}.cpp")
 endforeach()
 
+find_file (ExecutablePath "${Executable}.cpp" PATHS src test)
+
 # Ejecutable a generar
-add_executable(${Executable} "src/${Executable}.cpp")
+add_executable(${Executable} "${ExecutablePath}")
 
 foreach(Project IN LISTS SubProjects)
     # Vincular módulos

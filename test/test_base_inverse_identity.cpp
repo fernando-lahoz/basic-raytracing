@@ -1,5 +1,6 @@
 #include <numbers>
 #include <chrono>
+#include <iostream>
 
 #include "geometry.hpp"
 
@@ -31,32 +32,30 @@ int main()
     std::cin >> o[0] >> o[1] >> o[2];
 
     
-    Transformation t, inv;
+    Transformation t, rb, cb;
     Base b {u, v, w, o};
 
-    if (!b.isBase())
-    {
-        std::cout << "Is not invertible :(\n";
-        return 1;
-    }
-
+    //t.revertBase(b);
     t.revertBase(b);
-    inv = Transformation::Inverse(t);
+    rb.revertBase(b);
+    cb = Transformation::Inverse(rb);
+    std::cout << "\nBase:\n" << rb << '\n';
+    std::cout << "\nInverse:\n" << cb << '\n';
 
-    std::cout << "\nBase:\n" << t << '\n';
-    std::cout << "\nInverse:\n" << inv << '\n';
-
+/*
     auto seconds = benchmark(1000000000, [&]()
     {
-        t.apply(inv).revertBase(b);
+        t.changeBase(b).revertBase(b);
+    });
+
+    
+*/
+    auto seconds = benchmark(100000000, [&]()
+    {
+        t.changeBase(b).revertBase(b);
+        //t.apply(cb).apply(rb);
     });
 
     std::cout << "\nHere you go:\n" << t << '\n';
     std::cout << seconds << " s \n";
-    
-
-    //Transformation t {};
-    //std::cout << "\nHere you go:\n" << t.revertBase(u, v, w, o) << '\n';
-    //std::cout << "\nCheck Identity:\n" << t << '\n';
-
 }
