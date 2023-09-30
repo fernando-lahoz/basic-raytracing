@@ -18,8 +18,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
 
 include_directories(include src test)
 
-set(Executable main)
+#set(Executable main)
 #set(Executable test_base_inverse_identity)
+set(Executable test_ppm_parser)
+#set(Executable test_planetary_station)
 
 set(SubProjects
     #... NO DEBERÍA SER NECESARIO
@@ -28,7 +30,7 @@ set(SubProjects
 set(Libraries
     # AÑADIR AQUÍ LAS BIBLIOTECAS
     geometry
-    planetary_station
+    ppm
 )
 
 foreach(Project IN LISTS SubProjects)

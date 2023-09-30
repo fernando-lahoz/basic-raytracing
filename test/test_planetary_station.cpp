@@ -1,10 +1,82 @@
 #include <iostream>
 #include <tuple>
+#include <cassert>
+#include <tuple>
+#include <optional>
+#include <cmath>
+
+#include "geometry.hpp"
 
 #define ENDL std::cout << '\n';
 
-#include "geometry.hpp"
-#include "planetary_station.hpp"
+struct PlanetParameterPack { Point center; Point refCity; Direction axis; };
+
+std::optional<PlanetParameterPack>
+makePlanetParameterPack(Point center, Point refCity, Direction axis)
+{
+    Real radius = norm(refCity - center);
+    Real axisHalf = norm(axis) / 2.0f;
+
+    if (std::abs(axisHalf - radius) > 1E-6)
+        return {std::nullopt};
+
+    return PlanetParameterPack{center, refCity, axis};
+}
+
+class Planet
+{
+private:
+    Point center;
+    Point refCity;
+    Direction axis;
+    Base local;
+
+public:
+    Planet(PlanetParameterPack pack)
+        : center(pack.center), refCity(pack.refCity), axis(pack.axis)
+    {
+        Direction i, j, k;
+        Direction refRadius = refCity - center;
+        Real radius = norm(refRadius);
+
+        j = axis / 2.0f;
+        k = normalize(cross(refRadius, j)) * radius;
+        i = cross(j, k) / radius;
+
+        local = Base{i, j, k, center};
+    }
+
+    const Base& getLocalBase() { return local; }
+
+    friend class PlanetaryStation;
+};
+
+class PlanetaryStation 
+{
+private:
+    Point position;
+    Base local;
+
+public:
+    PlanetaryStation(const Planet& planet, Real inclination, Real azimuth)
+    {
+        Transformation t;
+        position = t.rotateZ(inclination).rotateY(azimuth).revertBase(planet.local) * Point{0, 1, 0};
+
+        Direction i, j, k;
+        Point north = planet.center + (planet.axis / 2.0f);
+
+        k = normalize(position - planet.center);
+        i = normalize(cross(north - position, k));
+        j = cross(k, i);
+
+        local = Base{i, j, k, position};
+    }
+
+    Point getPosition() { return position; }
+
+    const Base& getLocalBase() { return local; }
+};
 
 auto getPlanetParams()
 {
@@ -47,21 +119,6 @@ int main()
     auto [inclination, azimuth] = getStationParams(); ENDL
 
     PlanetaryStation station1 {planet1, inclination, azimuth};
-    /*
-    std::cout << "Base of planet"; ENDL
-    std::cout << planet1.getLocalBase();
-
-    Transformation B, Br;
-    B.changeBase(planet1.getLocalBase());
-    Br.revertBase(planet1.getLocalBase());
-    std::cout << "Change matrix"; ENDL
-    std::cout << B;
-    std::cout << "Check identity"; ENDL
-    std::cout << B.apply(Br);
-
-    std::cout << "Base of station"; ENDL
-    std::cout << station1.getLocalBase();
-    */
 
     // ------------------------------------------------------- //
 
