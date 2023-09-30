@@ -32,7 +32,8 @@ int main(int argc, char* argv[])
         std::cout << error << std::endl;
         return 1;
     }
-
+    img.colorRes = 255;
+    ppm::write(output, img);
 
     return 0;
 }

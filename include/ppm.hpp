@@ -12,8 +12,9 @@
 #include <tuple>
 #include <concepts>
 #include <sstream>
+#include <iomanip>
 
-#include "definitions.hpp"
+#include "real_numbers.hpp"
 
 namespace ppm {
 
@@ -25,16 +26,20 @@ private:
     std::vector<Real> redBuffer;
     std::vector<Real> greenBuffer;
     std::vector<Real> blueBuffer;
-
-    unsigned long long colorRes;
+    
     Real maxValue;
     std::size_t nRows, nColumns;
+    bool foundMaxValue;
 
 public:
+    unsigned long long colorRes;
 
     friend bool read(std::istream& is, ErrorMsg& error, Image& img);
+    friend void write(std::ostream& os, const Image& img);
 };
 
 [[nodiscard]] bool read(std::istream& is, ErrorMsg& error, Image& img);
+
+void write(std::ostream& os, const Image& img);
 
 } //namespace ppm

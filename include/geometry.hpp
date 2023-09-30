@@ -8,7 +8,7 @@
 #include <sstream>
 #include <optional>
 
-#include "definitions.hpp"
+#include "real_numbers.hpp"
 #include "macros/constructor_wrapper.hpp"
 
 class Vector

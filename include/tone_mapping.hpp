@@ -1,49 +1,45 @@
 #pragma once
 
-#include <fstream>
+#include "real_numbers.hpp"
 
 //10^-6, 10^8 -> 0, 255
 
-enum class strategy
+class ToneMappingStrategy
 {
-    clamping,
-    equalization,
-    equalization_clamping,
-    gamma,
-    gamma_clamping
+public:
+    virtual Real operator()(Real v) const = 0;
 };
 
-namespace strategy_implementation
+//Capar a partir de un valor a 255
+class Clamping : public ToneMappingStrategy
 {
-    //Capar a partir de un valor a 255
-    auto clamping()
+public:
+    virtual Real operator()(Real v) const override
     {
 
     }
+};
 
-    // Regla de 3 con el valor más alto
-    auto equalization()
-    {
+// Regla de 3 con el valor más alto
+auto equalization()
+{
 
-    }
+}
 
-    // Elegir un valor como el máximo
-    auto equalization_clamping()
-    {
+// Elegir un valor como el máximo
+auto equalization_clamping()
+{
 
-    }
+}
 
-    // exp(1/n)
-    auto gamma()
-    {
+// exp(1/n)
+auto gamma()
+{
 
-    }
+}
 
-    auto gamma_clamping()
-    {
+auto gamma_clamping()
+{
 
-    }
-
-} // namespace strategy
-
+}
 
