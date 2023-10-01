@@ -3,11 +3,10 @@
 #include "numbers.hpp"
 
 #include <ranges>
+#include <charconv>
 
-bool ppm::read(std::istream& is, Image& img)
-{
-    return false;
-}
+
+#include <iostream>
 
 void ppm::write(std::ostream& os, const Image& img)
 {
@@ -16,9 +15,21 @@ void ppm::write(std::ostream& os, const Image& img)
         return std::round(v * (img.colorResolution / img.maxLuminance));
     };
 
+    auto toString = [](Real x)
+    {
+        std::size_t precision = FLT_DIG;
+        if constexpr (std::is_same<Real, float>{}) precision = FLT_DIG;
+        else if constexpr (std::is_same<Real, double>{}) precision = DBL_DIG;
+        else if constexpr (std::is_same<Real, long double>{}) precision = LDBL_DIG;
+
+        std::stringstream ss;
+        ss << std::setprecision(precision) << x;
+        return ss.str();
+    };
+
     os << "P3\n";
     if (img.foundMaxValue)
-        os << "#MAX=" << numbers::ToString(img.maxLuminance) << '\n';
+        os << "#MAX=" << toString(img.maxLuminance) << '\n';
     os << std::to_string(img.nColumns) << ' ' << std::to_string(img.nRows) << '\n';
     os << std::to_string(img.colorResolution) << '\n';
     for (auto i : std::views::iota(std::size_t{0}, img.nColumns * img.nRows))
@@ -30,8 +41,7 @@ void ppm::write(std::ostream& os, const Image& img)
     os << '\n';
 }
 
-#if 0
-bool read(std::istream& is, Image& img)
+bool ppm::read(std::istream& is, Image& img)
 {
     ErrorMsg error;
 
@@ -40,6 +50,7 @@ bool read(std::istream& is, Image& img)
         buff.clear();
         for(;;)
         {
+            //std::cout << "buff:" << buff << std::endl;
             int c = is.get();
             if (c == '\r')
             {
@@ -111,21 +122,6 @@ bool read(std::istream& is, Image& img)
 
     img.foundMaxValue = false;
     img.maxLuminance = 1;
-
-    // Check format
-{
-    do {
-        line = getNextNoEmptyLine(buffer, eof, isComment); 
-        if (eof) { error = "Early EOF found"; return false; }
-    }
-    while (isComment);
-    
-    if (!findNextWord(line, 0, begin, end) || line.substr(begin, end - begin) != "P3")
-        { error = "Not supported format: " + buffer.substr(begin, end - begin); return false; }
-
-    if (!checkEOL(line, end))
-        { error = "Extra information following format was not expected: " + buffer.substr(end); return false; }
-}
     
     // Look for #MAX=...
 {
@@ -239,25 +235,3 @@ bool read(std::istream& is, Image& img)
     error = "Extra information following pixel matrix was not expected: " + buffer;
     return false;
 }
-
-void PPMHandler::write(std::ostream& os, const Image& img) const
-{
-    auto outputValue = [&](Real v) -> Natural
-    {
-        return std::round(v * (img.colorResolution / img.maxLuminance));
-    };
-
-    os << "P3\n";
-    if (img.foundMaxValue)
-        os << "#MAX=" << numbers::toString(img.maxLuminance) << '\n';
-    os << std::to_string(img.nColumns) << ' ' << std::to_string(img.nRows) << '\n';
-    os << std::to_string(img.colorResolution) << '\n';
-    for (auto i : std::views::iota(std::size_t{0}, img.nColumns * img.nRows))
-    {
-        os << std::to_string(outputValue(img.redBuffer[i])) << ' ';
-        os << std::to_string(outputValue(img.greenBuffer[i])) << ' ';
-        os << std::to_string(outputValue(img.blueBuffer[i])) << ' ';
-    }
-    os << '\n';
-}
-#endif

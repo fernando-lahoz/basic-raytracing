@@ -29,10 +29,9 @@ set(SubProjects
 
 set(Libraries
     # AÑADIR AQUÍ LAS BIBLIOTECAS
-    numbers
     geometry
     color_spaces
-    ppm
+    format/ppm
 )
 
 foreach(Project IN LISTS SubProjects)
@@ -43,16 +42,16 @@ foreach(Project IN LISTS SubProjects)
 endforeach()
 
 foreach(Lib IN LISTS Libraries)
-    #string(FIND ${Lib} "/" BarPos REVERSE)
-    #if (${BarPos} EQUAL -1)
-    #    set(LibName ${Lib})
-    #    set(LibNames "${LibNames};${Lib}")
-    #else()
-    #    MATH(EXPR BarPos "${BarPos} + 1")
-    #    string(SUBSTRING ${Lib} ${BarPos} -1 LibName)
-    #    set(LibNames "${LibNames};${LibName}")
-    #endif()
-    add_library(${Lib} "src/${Lib}.cpp")
+    string(FIND ${Lib} "/" BarPos REVERSE)
+    if (${BarPos} EQUAL -1)
+        set(LibName ${Lib})
+        set(LibNames "${LibNames};${LibName}")
+    else()
+        MATH(EXPR BarPos "${BarPos} + 1")
+        string(SUBSTRING ${Lib} ${BarPos} -1 LibName)
+        set(LibNames "${LibNames};${LibName}")
+    endif()
+    add_library(${LibName} "src/${Lib}.cpp")
 endforeach()
 
 find_file (ExecutablePath "${Executable}.cpp" PATHS src test)
@@ -65,7 +64,7 @@ foreach(Project IN LISTS SubProjects)
     target_link_libraries(${Executable} ${Project}) 
 endforeach()
 
-foreach(Lib IN LISTS Libraries)
+foreach(Lib IN LISTS LibNames)
     # Vincular módulos
     target_link_libraries(${Executable} ${Lib}) 
 endforeach()

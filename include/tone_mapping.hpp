@@ -9,38 +9,45 @@ public:
     virtual Real operator()(Real luminance) const = 0;
 };
 
-//Capar a partir de 255
+//Capar a partir de 1
 class Clamping : public ToneMappingStrategy
 {
 public:
     virtual Real operator()(Real luminance) const override
     {
-        return numbers::min(luminance, 255);
+        return numbers::min(luminance, 1);
     }
 };
 
 // Regla de 3 con el valor más alto
-class equalization : public ToneMappingStrategy
+class Equalization : public ToneMappingStrategy
 {
+private:
+    Real maxLuminance;
 public:
+    Equalization(Real max) : maxLuminance{max} {}
+
     virtual Real operator()(Real luminance) const override
     {
-        return luminance;
+        return luminance / maxLuminance;
     }
 };
 
 // Elegir un valor como el máximo
-class equalization_clamping : public ToneMappingStrategy
+class Equalization_Clamping : public ToneMappingStrategy
 {
+private:
+    Real limit;
 public:
+    Equalization_Clamping(Real top) : limit{top} {}
     virtual Real operator()(Real luminance) const override
     {
-        return luminance;
+        return numbers::min(luminance, limit) / limit;
     }
 };
 
 // exp(1/n)
-class gamma : public ToneMappingStrategy
+class Gamma : public ToneMappingStrategy
 {
 public:
     virtual Real operator()(Real luminance) const override
@@ -49,7 +56,7 @@ public:
     }
 };
 
-class gamma_clamping : public ToneMappingStrategy
+class Gamma_Clamping : public ToneMappingStrategy
 {
 public:
     virtual Real operator()(Real luminance) const override

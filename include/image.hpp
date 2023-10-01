@@ -60,7 +60,19 @@ public:
         return {redBuffer[index], greenBuffer[index], blueBuffer[index]};
     }
 
-    void map(const ToneMappingStrategy& f);
+    void map(const ToneMappingStrategy& f)
+    {
+        for (Index i = 0; i < redBuffer.size(); ++i)
+        {
+            Pixel p = {redBuffer[i], greenBuffer[i], blueBuffer[i]};
+            auto [h, s, v] = HSVPixel::fromRGB(p, maxLuminance);
+            maxLuminance = 1;
+            auto [r, g, b] = HSVPixel::toRGB({h, s, f(v)}, maxLuminance);
+            redBuffer[i] = r;
+            greenBuffer[i] = g;
+            blueBuffer[i] = b;
+        }
+    }
 
     friend bool ppm::read(std::istream& is, Image& img);
     friend void ppm::write(std::ostream& os, const Image& img);

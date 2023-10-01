@@ -12,10 +12,6 @@ using Index = std::size_t;
 
 namespace numbers {
 
-std::string ToString(Real x);
-
-Real mod(Real x, Natural n);
-
 template <typename Ty>
 auto max(Ty n) { return n; }
 
