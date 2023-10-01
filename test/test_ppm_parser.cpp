@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "ppm.hpp"
+#include "image.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -25,14 +25,16 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    ppm::Image img;
-    ppm::ErrorMsg error;
-    if (!ppm::read(input, error, img))
+    Image img;
+    ErrorMsg error;
+    if (!ppm::read(input, img))
     {
         std::cout << error << std::endl;
         return 1;
     }
-    img.colorRes = 255;
+    img.colorResolution = 255;
+    img.foundMaxValue = false;
+    img.maxLuminance = 255;
     ppm::write(output, img);
 
     return 0;

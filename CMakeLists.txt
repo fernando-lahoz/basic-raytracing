@@ -29,7 +29,9 @@ set(SubProjects
 
 set(Libraries
     # AÑADIR AQUÍ LAS BIBLIOTECAS
+    numbers
     geometry
+    color_spaces
     ppm
 )
 
@@ -41,6 +43,15 @@ foreach(Project IN LISTS SubProjects)
 endforeach()
 
 foreach(Lib IN LISTS Libraries)
+    #string(FIND ${Lib} "/" BarPos REVERSE)
+    #if (${BarPos} EQUAL -1)
+    #    set(LibName ${Lib})
+    #    set(LibNames "${LibNames};${Lib}")
+    #else()
+    #    MATH(EXPR BarPos "${BarPos} + 1")
+    #    string(SUBSTRING ${Lib} ${BarPos} -1 LibName)
+    #    set(LibNames "${LibNames};${LibName}")
+    #endif()
     add_library(${Lib} "src/${Lib}.cpp")
 endforeach()
 

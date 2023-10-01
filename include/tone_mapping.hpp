@@ -1,45 +1,60 @@
 #pragma once
 
-#include "real_numbers.hpp"
-
-//10^-6, 10^8 -> 0, 255
+#include "numbers.hpp"
+#include "color_spaces.hpp"
 
 class ToneMappingStrategy
 {
 public:
-    virtual Real operator()(Real v) const = 0;
+    virtual Real operator()(Real luminance) const = 0;
 };
 
-//Capar a partir de un valor a 255
+//Capar a partir de 255
 class Clamping : public ToneMappingStrategy
 {
 public:
-    virtual Real operator()(Real v) const override
+    virtual Real operator()(Real luminance) const override
     {
-
+        return numbers::min(luminance, 255);
     }
 };
 
 // Regla de 3 con el valor más alto
-auto equalization()
+class equalization : public ToneMappingStrategy
 {
-
-}
+public:
+    virtual Real operator()(Real luminance) const override
+    {
+        return luminance;
+    }
+};
 
 // Elegir un valor como el máximo
-auto equalization_clamping()
+class equalization_clamping : public ToneMappingStrategy
 {
-
-}
+public:
+    virtual Real operator()(Real luminance) const override
+    {
+        return luminance;
+    }
+};
 
 // exp(1/n)
-auto gamma()
+class gamma : public ToneMappingStrategy
 {
+public:
+    virtual Real operator()(Real luminance) const override
+    {
+        return luminance;
+    }
+};
 
-}
-
-auto gamma_clamping()
+class gamma_clamping : public ToneMappingStrategy
 {
-
-}
+public:
+    virtual Real operator()(Real luminance) const override
+    {
+        return luminance;
+    }
+};
 

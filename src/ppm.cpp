@@ -1,7 +1,40 @@
-#include "ppm.hpp"
+#include "format/ppm.hpp"
+#include "image.hpp"
+#include "numbers.hpp"
 
-bool ppm::read(std::istream& is, ErrorMsg& error, Image& img)
+#include <ranges>
+
+bool ppm::read(std::istream& is, Image& img)
 {
+    return false;
+}
+
+void ppm::write(std::ostream& os, const Image& img)
+{
+    auto outputValue = [&](Real v) -> Natural
+    {
+        return std::round(v * (img.colorResolution / img.maxLuminance));
+    };
+
+    os << "P3\n";
+    if (img.foundMaxValue)
+        os << "#MAX=" << numbers::ToString(img.maxLuminance) << '\n';
+    os << std::to_string(img.nColumns) << ' ' << std::to_string(img.nRows) << '\n';
+    os << std::to_string(img.colorResolution) << '\n';
+    for (auto i : std::views::iota(std::size_t{0}, img.nColumns * img.nRows))
+    {
+        os << std::to_string(outputValue(img.redBuffer[i])) << ' ';
+        os << std::to_string(outputValue(img.greenBuffer[i])) << ' ';
+        os << std::to_string(outputValue(img.blueBuffer[i])) << ' ';
+    }
+    os << '\n';
+}
+
+#if 0
+bool read(std::istream& is, Image& img)
+{
+    ErrorMsg error;
+
     auto getline = [](std::istream& is, std::string& buff)
     {
         buff.clear();
@@ -77,7 +110,7 @@ bool ppm::read(std::istream& is, ErrorMsg& error, Image& img)
     std::size_t begin, end;
 
     img.foundMaxValue = false;
-    img.maxValue = 1;
+    img.maxLuminance = 1;
 
     // Check format
 {
@@ -111,7 +144,7 @@ bool ppm::read(std::istream& is, ErrorMsg& error, Image& img)
                 { error = "An assignment was expected: " + buffer; return false; }
 
             if (!findNextWord(line, begin + 1, begin, end)
-                || !(img.foundMaxValue = getValue(line, begin, end, img.maxValue)))
+                || !(img.foundMaxValue = getValue(line, begin, end, img.maxLuminance)))
                 { error = "A number was expected to be assigned: " + buffer; return false; }
             
             if (!checkEOL(line, end))
@@ -147,7 +180,7 @@ bool ppm::read(std::istream& is, ErrorMsg& error, Image& img)
     }
     while (isComment);
 
-    if (!findNextWord(line, 0, begin, end) || !getValue(line, begin, end, img.colorRes))
+    if (!findNextWord(line, 0, begin, end) || !getValue(line, begin, end, img.colorResolution))
         { error = "Color space resolution was expected: " + buffer.substr(begin, end - begin); return false; }
 
     if (!checkEOL(line, end))
@@ -172,32 +205,25 @@ bool ppm::read(std::istream& is, ErrorMsg& error, Image& img)
 
     for (std::size_t i : std::views::iota(std::size_t{0}, size))
     {
-        unsigned int red, green, blue;
+        Natural red, green, blue;
 
-        if (!(ss >> buffer) && !(is >> buffer))
-            { error = "Early EOF found"; return false; }
-
-        if (!findNextWord(buffer, 0, begin, end) || !getValue(buffer, begin, end, red))
-            { error = "Red value was expected: " + buffer.substr(begin, end - begin); return false; }
-
-        if (!(ss >> buffer) && !(is >> buffer))
-            { error = "Early EOF found"; return false; }
-
-        if (!findNextWord(buffer, 0, begin, end) || !getValue(buffer, begin, end, green))
-            { error = "Green value was expected: " + buffer.substr(begin, end - begin); return false; }
-
-        if (!(ss >> buffer) && !(is >> buffer))
-            { error = "Early EOF found"; return false; }
-        
-        if (!findNextWord(buffer, 0, begin, end) || !getValue(buffer, begin, end, blue))
-            { error = "Blue value was expected: " + buffer.substr(begin, end - begin); return false; }
-
-        auto inputValue = [&](unsigned long long s) -> Real
+        auto getColorValue = [&](std::string color, Natural& value) -> bool
         {
-            return s * (img.maxValue / img.colorRes);
+            if (!(ss >> buffer) && !(is >> buffer))
+                { error = "Early EOF found"; return false; }
+
+            if (!findNextWord(buffer, 0, begin, end) || !getValue(buffer, begin, end, value))
+                { error = color + " value was expected: " + buffer.substr(begin, end - begin); return false; }
+
+            return true;
         };
 
-        // CHECKEAR QUE NO HAY NINGÚN S > C
+        if (!getColorValue("Red", red)) return false;
+        if (!getColorValue("Green", green)) return false;
+        if (!getColorValue("Blue", blue)) return false;
+
+        auto inputValue = [&](Natural s) -> Real
+            { return s * (img.maxLuminance / img.colorResolution); };
 
         img.redBuffer[i] = inputValue(red);
         img.greenBuffer[i] = inputValue(green);
@@ -214,18 +240,18 @@ bool ppm::read(std::istream& is, ErrorMsg& error, Image& img)
     return false;
 }
 
-void ppm::write(std::ostream& os, const Image& img)
+void PPMHandler::write(std::ostream& os, const Image& img) const
 {
-    auto outputValue = [&](Real v) -> unsigned long long
+    auto outputValue = [&](Real v) -> Natural
     {
-        return v * (img.colorRes / img.maxValue);
+        return std::round(v * (img.colorResolution / img.maxLuminance));
     };
 
     os << "P3\n";
     if (img.foundMaxValue)
-        os << "#MAX=" << real::toString(img.maxValue) << '\n';
+        os << "#MAX=" << numbers::toString(img.maxLuminance) << '\n';
     os << std::to_string(img.nColumns) << ' ' << std::to_string(img.nRows) << '\n';
-    os << std::to_string(img.colorRes) << '\n';
+    os << std::to_string(img.colorResolution) << '\n';
     for (auto i : std::views::iota(std::size_t{0}, img.nColumns * img.nRows))
     {
         os << std::to_string(outputValue(img.redBuffer[i])) << ' ';
@@ -234,3 +260,4 @@ void ppm::write(std::ostream& os, const Image& img)
     }
     os << '\n';
 }
+#endif

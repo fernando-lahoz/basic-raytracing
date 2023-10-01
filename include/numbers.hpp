@@ -10,19 +10,28 @@ using Integer = long long;
 
 using Index = std::size_t;
 
-std::string toString(Real x)
-{
-    std::size_t precision;
-    if constexpr (std::is_same<Real, float>{}) precision = FLT_DECIMAL_DIG;
-    else if constexpr (std::is_same<Real, double>{}) precision = DBL_DECIMAL_DIG;
-    else if constexpr (std::is_same<Real, long double>{}) precision = LDBL_DECIMAL_DIG;
+namespace numbers {
 
-    std::stringstream ss;
-    ss << std::setprecision(precision) << x;
-    return ss.str();
+std::string ToString(Real x);
+
+Real mod(Real x, Natural n);
+
+template <typename Ty>
+auto max(Ty n) { return n; }
+
+template <typename Ty, typename ...Args>
+auto max(Ty n, Args ...args) {
+    auto m = max(args...);
+    return n > m ? n : m;
 }
 
-Real mod (Real x, Natural n)
-{
-    return x - n * static_cast<Natural>(x / n);
-};
+template <typename Ty>
+auto min(Ty n) { return n; }
+
+template <typename Ty, typename ...Args>
+auto min(Ty n, Args ...args) {
+    auto m = min(args...);
+    return n < m ? n : m;
+}
+
+} //namespace numbers
