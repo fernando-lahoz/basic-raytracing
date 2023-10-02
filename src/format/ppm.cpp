@@ -28,7 +28,7 @@ void ppm::write(std::ostream& os, const Image& img)
     };
 
     os << "P3\n";
-    if (img.foundMaxValue)
+    if (img.maxLuminance != 1)
         os << "#MAX=" << toString(img.maxLuminance) << '\n';
     os << std::to_string(img.nColumns) << ' ' << std::to_string(img.nRows) << '\n';
     os << std::to_string(img.colorResolution) << '\n';
@@ -41,10 +41,9 @@ void ppm::write(std::ostream& os, const Image& img)
     os << '\n';
 }
 
+//Indulgent version
 bool ppm::read(std::istream& is, Image& img)
 {
-    ErrorMsg error;
-
     auto getline = [](std::istream& is, std::string& buff)
     {
         buff.clear();
@@ -64,174 +63,133 @@ bool ppm::read(std::istream& is, Image& img)
         }
     };
 
-    auto findNextWord = [](std::string_view sv, std::size_t pos, std::size_t& begin, std::size_t& end)
-    {
-        static constexpr std::size_t npos = std::string_view::npos;
-
-        begin = sv.find_first_not_of(" \t", pos);
-        if (begin == npos) { end = npos; return false; }
-
-        end = sv.find_first_of(" \t", begin);
-        if (end == npos) { end = sv.length(); return true; }
-        
-        return true;
-    };
-
-    auto getValue = [](std::string_view sv, std::size_t begin, std::size_t end, auto& value)
-    {
-        auto result = std::from_chars(sv.data() + begin, sv.data() + end, value);
-        
-        if constexpr (std::unsigned_integral<decltype(value)>)
-            if (sv[begin] == '-')
-                return false;
-
-        return (result.ptr == sv.data() + end)
-            && (result.ec == std::errc{});
-    };
-
     auto checkEOL = [](std::string_view sv, std::size_t pos)
     {
         auto remaining = sv.find_first_not_of(" \t", pos);
         return (remaining == std::string_view::npos);
     };
 
-    auto getNextNoEmptyLine = [&](std::string& buffer, bool& eof, bool& isComment)
+    auto getNextNoEmptyLine = [&](std::stringstream& buffer)
     {   
+        std::string line;
         do {
             do {
-                getline(is, buffer);
-                if (buffer.length() == 0 && !is)
-                    { eof = true; isComment = false; return std::string_view{buffer}; }
+                getline(is, line);
+                if (line.length() == 0 && !is)
+                    return false;
             }
-            while (buffer.length() == 0);
-
-            if (buffer[0] == '#')
-                { eof = false; isComment = true; return std::string_view{buffer}; }
+            while (line.length() == 0);
         }
-        while (std::string{" \t"}.find(buffer[0]) != std::string::npos && checkEOL(buffer, 1));
-        
-        eof = false; isComment = false;
-        return std::string_view{buffer};
+        while (std::string{" \t"}.find(line[0]) != std::string::npos && checkEOL(line, 1));
+        buffer = std::stringstream{line};
+        return true;
     };
 
-    std::string buffer;
-    std::string_view line;
+    std::stringstream buffer;
 
-    bool eof, isComment;
-    std::size_t begin, end;
+    bool error = false;
 
-    img.foundMaxValue = false;
-    img.maxLuminance = 1;
-    
-    // Look for #MAX=...
-{
-    line = getNextNoEmptyLine(buffer, eof, isComment); 
-    if (eof) { error = "Early EOF found"; return false; }
-
-    while (isComment)
+    auto readNumber = [](std::string_view num, auto& value)
     {
-        if (img.foundMaxValue || !findNextWord(line, 1, begin, end))
-            goto continue_loop;
-
-        if (line.substr(begin, 3) == "MAX")
+        using Ty = typename std::remove_reference<decltype(value)>::type;
+        Ty temp;
+        auto res = std::from_chars(num.begin(), num.end(), temp);
+        if (res.ec == std::errc{})
         {
-            if (!findNextWord(line, begin + 3, begin, end)
-                || line.substr(begin, end - begin)[0] != '=')
-                { error = "An assignment was expected: " + buffer; return false; }
-
-            if (!findNextWord(line, begin + 1, begin, end)
-                || !(img.foundMaxValue = getValue(line, begin, end, img.maxLuminance)))
-                { error = "A number was expected to be assigned: " + buffer; return false; }
-            
-            if (!checkEOL(line, end))
-                { error = "Extra information following MAX assignment was not expected: " + buffer.substr(end); return false; }
-        }
-
-    continue_loop:
-        line = getNextNoEmptyLine(buffer, eof, isComment);
-        if (eof) { error = "Early EOF found"; return false; }
-    }
-}
-    
-    // Look for dimensions
-{
-    if (!findNextWord(line, 0, begin, end) || !getValue(line, begin, end, img.nColumns))
-        { error = "Width was expected: " + buffer.substr(begin, end - begin); return false; }
-
-    if (!findNextWord(line, end, begin, end) || !getValue(line, begin, end, img.nRows))
-        { error = "Height was expected: " + buffer.substr(begin, end - begin); return false; }
-
-    if (!checkEOL(line, end))
-        { error = "Extra information following image dimension was not expected: " + buffer.substr(end); return false; }
-
-    if (img.nColumns == 0 || img.nRows == 0)
-        { error = "Bad image dimension: " + buffer; return false; }
-}
-
-    // Look for color resolution
-{
-    do {
-        line = getNextNoEmptyLine(buffer, eof, isComment); 
-        if (eof) { error = "Early EOF found"; return false; }
-    }
-    while (isComment);
-
-    if (!findNextWord(line, 0, begin, end) || !getValue(line, begin, end, img.colorResolution))
-        { error = "Color space resolution was expected: " + buffer.substr(begin, end - begin); return false; }
-
-    if (!checkEOL(line, end))
-        { error = "Extra information following color space resolution was not expected: " + buffer.substr(end); return false; }
-}
-
-    // Fill the matrix
-{
-    do {
-        line = getNextNoEmptyLine(buffer, eof, isComment); 
-        if (eof) { error = "Early EOF found"; return false; }
-    }
-    while (isComment);
-
-    std::stringstream ss {buffer};
-
-    const std::size_t size = img.nColumns * img.nRows;
-
-    img.redBuffer.resize(size);
-    img.greenBuffer.resize(size);
-    img.blueBuffer.resize(size);
-
-    for (std::size_t i : std::views::iota(std::size_t{0}, size))
-    {
-        Natural red, green, blue;
-
-        auto getColorValue = [&](std::string color, Natural& value) -> bool
-        {
-            if (!(ss >> buffer) && !(is >> buffer))
-                { error = "Early EOF found"; return false; }
-
-            if (!findNextWord(buffer, 0, begin, end) || !getValue(buffer, begin, end, value))
-                { error = color + " value was expected: " + buffer.substr(begin, end - begin); return false; }
-
+            value = temp;
             return true;
+        }
+        return false;
+    };
+
+    auto checkMAX = [&readNumber](std::string_view firstWord, std::stringstream& buffer, Real& value)
+    {
+        auto findValue = [&](std::string_view num)
+        {
+            if (num.length() > 0) return readNumber(num, value);
+            else if (std::string str; buffer >> str) return readNumber(str, value);
+            else return false;
         };
 
-        if (!getColorValue("Red", red)) return false;
-        if (!getColorValue("Green", green)) return false;
-        if (!getColorValue("Blue", blue)) return false;
+        auto findAsign = [&](std::string_view asign)
+        {
+            if (asign.length() > 0 && asign[0] == '=') return findValue(asign.substr(0));
+            else if (std::string next; buffer >> next && next[0] == '=') return findValue(next);
+            else return false;
+        };
 
-        auto inputValue = [&](Natural s) -> Real
-            { return s * (img.maxLuminance / img.colorResolution); };
+        if (firstWord.substr(1, 3) == "MAX")
+            { return findAsign(firstWord.substr(4)); }
+        else if (std::string secondWord; buffer >> secondWord
+            && secondWord.substr(0, 3) == "MAX")
+            { return findAsign(secondWord.substr(3)); }
 
-        img.redBuffer[i] = inputValue(red);
-        img.greenBuffer[i] = inputValue(green);
-        img.blueBuffer[i] = inputValue(blue);
+        return false;
+    };
+
+    enum NextValue { WIDTH, HEIGHT, RESOLUTION, RED, GREEN, BLUE, END }; // order matters
+    Index step = WIDTH;
+
+    auto stateMachineNextStep = [&](std::string_view str)
+    {
+        static Index i = 0;
+
+        std::cout << "STEP: " << step << std::endl;
+
+        switch (step++)
+        {
+        case WIDTH: return readNumber(str, img.nColumns);
+        case HEIGHT: return readNumber(str, img.nRows);
+        case RESOLUTION:
+                    if (readNumber(str, img.colorResolution))
+                    {
+                        Index size = img.nColumns * img.nRows;
+                        img.redBuffer.resize(size);
+                        img.greenBuffer.resize(size);
+                        img.blueBuffer.resize(size);
+                        return true;
+                    }
+                    return false;
+        case RED:   return readNumber(str, img.redBuffer[i]);
+        case GREEN: return readNumber(str, img.greenBuffer[i]);
+        case BLUE:
+                    if (i < img.blueBuffer.size() - 1) step = RED;
+                    else step = END;
+                    return readNumber(str, img.blueBuffer[i++]);
+        default:    return false;
+        }
+    };
+
+    auto processWords = [&]()
+    {
+        static bool foundMAX = false;
+        std::string word;
+        if (!(buffer >> word))
+            return false;
+
+        std::cout << "WORD: " << word << std::endl;
+
+        if (word[0] == '#')
+        {
+            error = (step >= RED);
+            if (!foundMAX && !error) foundMAX = checkMAX(word, buffer, img.maxLuminance);
+            return false;
+        }
+        error = !stateMachineNextStep(word);
+        return !error;
+    };
+
+    while (step != END)
+    {
+        if (!getNextNoEmptyLine(buffer)) return false;
+
+        std::cout << "BUFFER: " << buffer.str() << std::endl;
+
+        while (processWords());
+
+        std::cout << "AFTER STEP: " << step << std::endl;
+        if (error) return false;
     }
-}
-    do {
-        getNextNoEmptyLine(buffer, eof, isComment); 
-        if (eof) return true;
-    }
-    while (isComment);
 
-    error = "Extra information following pixel matrix was not expected: " + buffer;
-    return false;
+    return true;
 }

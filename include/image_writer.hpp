@@ -51,6 +51,6 @@ template <typename IW = ImageWriter>
         return nullptr;
     }
     else {
-        return std::make_unique<IW>(os);
+        return std::unique_ptr<IW>{new IW{std::move(os)}};
     }
 }

@@ -20,19 +20,20 @@ int main(int argc, char* argv[])
         return 1;
     }
     
-    auto writer = makeImageWriter(argv[2]);
-    if (writer == nullptr)
-    {
-        std::cout << "Could not open destination file\n";
-        return 1;
-    }
-
     Image img; 
     if (!reader.get()->read(img))
     {
         std::cout << "error" << std::endl;
         return 1;
     }
+    
+    auto writer = makeImageWriter<PPMWriter>(argv[2]);
+    if (writer == nullptr)
+    {
+        std::cout << "Could not open destination file\n";
+        return 1;
+    }
+
     //img.map(Clamping{});
     //img.map(Equalization{img.maxLuminance});
     img.map(Equalization_Clamping{2});
