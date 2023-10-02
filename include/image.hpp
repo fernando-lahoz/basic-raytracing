@@ -8,7 +8,10 @@
 
 #include "format/ppm.hpp"
 
-using ErrorMsg = std::string;
+struct Dimensions
+{
+    Index width, height;
+};
 
 class Image
 {
@@ -17,12 +20,16 @@ private:
     std::vector<Real> greenBuffer;
     std::vector<Real> blueBuffer;
     
-    Index nRows, nColumns;
+    Real maxLuminance;
+    Natural colorResolution;
+    Index nColumns, nRows;
 
 public:
-    Natural colorResolution;
-    bool foundMaxValue;
-    Real maxLuminance;
+    Image() : Image{1, 255, {}} {}
+
+    Image(Real maxLum, Natural colorRes, Dimensions dim)
+        : maxLuminance{maxLum}, colorResolution{colorRes},
+            nColumns{dim.width}, nRows{dim.height} {}
 
     class PixelProxy
     {
@@ -49,6 +56,24 @@ public:
         }
     };
 
+    /**
+     * @brief Size in pixels of this image. Equivalent to `width * height`.
+     * 
+     * @return Number of pixels in this image
+     */
+    Index pixels() { return blueBuffer.size(); }
+
+    /**
+     * @return This image dimensions: `{ width, height }`.
+     */
+    Dimensions dimensions() const { return {nColumns, nRows}; }
+
+    Real luminance() const { return maxLuminance; }
+
+    Natural resolution() const { return colorResolution;}
+
+    void changeResolution(Natural c) { colorResolution = c;}
+
     PixelProxy operator()(Index i, Index j)
     {
         return {*this, i*nColumns + j};
@@ -56,21 +81,27 @@ public:
 
     Pixel operator()(Index i, Index j) const
     {
-        Index index = i*nColumns + j;
-        return {redBuffer[index], greenBuffer[index], blueBuffer[index]};
+        return (*this)(i*nColumns + j);
     }
 
-    void map(const ToneMappingStrategy& f)
+    PixelProxy operator()(Index i)
     {
-        for (Index i = 0; i < redBuffer.size(); ++i)
+        return {*this, i};
+    }
+
+    Pixel operator()(Index i) const
+    {
+        return {redBuffer[i], greenBuffer[i], blueBuffer[i]};
+    }
+
+    void toneMap(const ToneMappingStrategy& f)
+    {
+        Image& img = *this;
+        for (Index i = 0; i < img.pixels(); ++i)
         {
-            Pixel p = {redBuffer[i], greenBuffer[i], blueBuffer[i]};
-            auto [h, s, v] = HSVPixel::fromRGB(p, maxLuminance);
+            auto [h, s, v] = HSVPixel::fromRGB(img(i), maxLuminance);
             maxLuminance = 1;
-            auto [r, g, b] = HSVPixel::toRGB({h, s, f(v)}, maxLuminance);
-            redBuffer[i] = r;
-            greenBuffer[i] = g;
-            blueBuffer[i] = b;
+            img(i) = HSVPixel::toRGB({h, s, f(v)}, maxLuminance);
         }
     }
 

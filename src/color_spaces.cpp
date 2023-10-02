@@ -6,7 +6,7 @@
 HSVPixel HSVPixel::fromRGB(Pixel p, Real maxLuminance)
 {
     auto mod = [](Real x, Natural n) -> Real
-        { return x - n * static_cast<Natural>(x / n); };
+        { return std::abs(x - n * static_cast<Natural>(x / n)); };
 
     Real r = p.r / maxLuminance;
     Real g = p.g / maxLuminance;
@@ -39,7 +39,7 @@ HSVPixel HSVPixel::fromRGB(Pixel p, Real maxLuminance)
 Pixel HSVPixel::toRGB(HSVPixel p, Real maxLuminance)
 {
     auto mod = [](Real x, Natural n) -> Real
-        { return x - n * static_cast<Natural>(x / n); };
+        { return std::abs(x - n * static_cast<Natural>(x / n)); };
 
     const Real nv = p.v / maxLuminance;
     const Real c = nv * p.s;

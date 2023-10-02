@@ -4,7 +4,7 @@
 #include <sstream>
 #include <iomanip>
 
-using Real = long double;
+using Real = float;
 using Natural = unsigned long long;
 using Integer = long long;
 

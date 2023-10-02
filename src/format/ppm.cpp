@@ -4,9 +4,10 @@
 
 #include <ranges>
 #include <charconv>
+#include <concepts>
 
-
-#include <iostream>
+template<class Ty>
+concept Readable = requires (char* ptr, Ty& n) { std::from_chars(ptr, ptr, n); };
 
 void ppm::write(std::ostream& os, const Image& img)
 {
@@ -17,7 +18,7 @@ void ppm::write(std::ostream& os, const Image& img)
 
     auto toString = [](Real x)
     {
-        std::size_t precision = FLT_DIG;
+        Index precision = FLT_DIG;
         if constexpr (std::is_same<Real, float>{}) precision = FLT_DIG;
         else if constexpr (std::is_same<Real, double>{}) precision = DBL_DIG;
         else if constexpr (std::is_same<Real, long double>{}) precision = LDBL_DIG;
@@ -32,13 +33,17 @@ void ppm::write(std::ostream& os, const Image& img)
         os << "#MAX=" << toString(img.maxLuminance) << '\n';
     os << std::to_string(img.nColumns) << ' ' << std::to_string(img.nRows) << '\n';
     os << std::to_string(img.colorResolution) << '\n';
-    for (auto i : std::views::iota(std::size_t{0}, img.nColumns * img.nRows))
-    {
-        os << std::to_string(outputValue(img.redBuffer[i])) << ' ';
-        os << std::to_string(outputValue(img.greenBuffer[i])) << ' ';
-        os << std::to_string(outputValue(img.blueBuffer[i])) << ' ';
+    auto [width, height] = img.dimensions();
+    for (Index i = 0; i < height; ++i)
+    {   
+        for (Index j = 0; j < width; ++j)
+        {
+            os << std::to_string(outputValue(img.redBuffer[i])) << ' ';
+            os << std::to_string(outputValue(img.greenBuffer[i])) << ' ';
+            os << std::to_string(outputValue(img.blueBuffer[i])) << ' ';
+        }
+        os << '\n';
     }
-    os << '\n';
 }
 
 //Indulgent version
@@ -49,7 +54,6 @@ bool ppm::read(std::istream& is, Image& img)
         buff.clear();
         for(;;)
         {
-            //std::cout << "buff:" << buff << std::endl;
             int c = is.get();
             if (c == '\r')
             {
@@ -86,14 +90,13 @@ bool ppm::read(std::istream& is, Image& img)
     };
 
     std::stringstream buffer;
-
     bool error = false;
 
-    auto readNumber = [](std::string_view num, auto& value)
+    auto readNumber = []<Readable Ty> (std::string_view num, Ty& value) 
     {
-        using Ty = typename std::remove_reference<decltype(value)>::type;
         Ty temp;
-        auto res = std::from_chars(num.begin(), num.end(), temp);
+        const char* begin = num.data(), *end = num.data() + num.length();
+        auto res = std::from_chars(begin, end, temp);
         if (res.ec == std::errc{})
         {
             value = temp;
@@ -113,9 +116,12 @@ bool ppm::read(std::istream& is, Image& img)
 
         auto findAsign = [&](std::string_view asign)
         {
-            if (asign.length() > 0 && asign[0] == '=') return findValue(asign.substr(0));
-            else if (std::string next; buffer >> next && next[0] == '=') return findValue(next);
-            else return false;
+            if (asign.length() > 0 && asign[0] == '=')
+                { return findValue(asign.substr(1)); }
+            else if (std::string next; buffer >> next && next[0] == '=')
+                { return findValue(next.substr(1)); }
+            
+            return false;
         };
 
         if (firstWord.substr(1, 3) == "MAX")
@@ -132,9 +138,12 @@ bool ppm::read(std::istream& is, Image& img)
 
     auto stateMachineNextStep = [&](std::string_view str)
     {
-        static Index i = 0;
+        auto inputValue = [&](Natural s) -> Real
+            { return s * (img.maxLuminance / img.colorResolution); };
 
-        std::cout << "STEP: " << step << std::endl;
+        static Index i = 0;
+        Natural temp = 0;
+        bool ok;
 
         switch (step++)
         {
@@ -150,12 +159,18 @@ bool ppm::read(std::istream& is, Image& img)
                         return true;
                     }
                     return false;
-        case RED:   return readNumber(str, img.redBuffer[i]);
-        case GREEN: return readNumber(str, img.greenBuffer[i]);
+        case RED:   ok = readNumber(str, temp);
+                    img.redBuffer[i] = inputValue(temp);
+                    return ok;
+        case GREEN: ok = readNumber(str, temp);
+                    img.greenBuffer[i] = inputValue(temp);
+                    return ok;
         case BLUE:
                     if (i < img.blueBuffer.size() - 1) step = RED;
                     else step = END;
-                    return readNumber(str, img.blueBuffer[i++]);
+                    ok = readNumber(str, temp);
+                    img.blueBuffer[i++] = inputValue(temp);
+                    return ok;
         default:    return false;
         }
     };
@@ -166,8 +181,6 @@ bool ppm::read(std::istream& is, Image& img)
         std::string word;
         if (!(buffer >> word))
             return false;
-
-        std::cout << "WORD: " << word << std::endl;
 
         if (word[0] == '#')
         {
@@ -182,12 +195,7 @@ bool ppm::read(std::istream& is, Image& img)
     while (step != END)
     {
         if (!getNextNoEmptyLine(buffer)) return false;
-
-        std::cout << "BUFFER: " << buffer.str() << std::endl;
-
         while (processWords());
-
-        std::cout << "AFTER STEP: " << step << std::endl;
         if (error) return false;
     }
 

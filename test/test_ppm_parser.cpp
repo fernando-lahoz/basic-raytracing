@@ -34,12 +34,12 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    //img.map(Clamping{});
-    //img.map(Equalization{img.maxLuminance});
-    img.map(Equalization_Clamping{2});
-    img.colorResolution = 255;
-    img.foundMaxValue = false;
-    //img.maxLuminance = 255;
+    //img.toneMap(Clamping{});
+    //img.toneMap(Equalization{img.luminance()});
+    //img.toneMap(Equalization_Clamping{1.7323});
+    //img.toneMap(Gamma{img.luminance(), 0.2});
+    img.toneMap(Gamma_Clamping{4, 0.5});
+    img.changeResolution(255);
     writer.get()->write(img);
 
     return 0;

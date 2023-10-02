@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 #include "numbers.hpp"
 #include "color_spaces.hpp"
 
@@ -46,22 +48,29 @@ public:
     }
 };
 
-// exp(1/n)
 class Gamma : public ToneMappingStrategy
 {
+private:
+    Real maxLuminance;
+    Real gammaValue;
 public:
+    Gamma(Real max, Real gamma) : maxLuminance{max}, gammaValue{gamma} {}
     virtual Real operator()(Real luminance) const override
     {
-        return luminance;
+        return std::pow(luminance / maxLuminance , gammaValue);
     }
 };
 
 class Gamma_Clamping : public ToneMappingStrategy
 {
+private:
+    Real limit;
+    Real gammaValue;
 public:
+    Gamma_Clamping(Real top, Real gamma) : limit{top}, gammaValue{gamma} {}
     virtual Real operator()(Real luminance) const override
     {
-        return luminance;
+        return std::pow(std::min(luminance, limit) / limit , gammaValue);
     }
 };
 
