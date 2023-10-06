@@ -1,15 +1,9 @@
 #pragma once
 
 #include <fstream>
-#include <filesystem>
 #include <memory>
 
 #include "image.hpp"
-
-class ImageWriter;
-
-template <typename IW>
-[[nodiscard]] std::unique_ptr<ImageWriter> makeImageWriter(std::filesystem::path path);
 
 class ImageWriter
 {
@@ -30,22 +24,28 @@ public:
 };
 
 template <typename IW = ImageWriter>
-[[nodiscard]] std::unique_ptr<ImageWriter> makeImageWriter(std::filesystem::path path, std::string_view format = "")
+[[nodiscard]] std::unique_ptr<ImageWriter> makeImageWriter(std::string_view path, std::string_view format = "")
 {
-    std::ofstream os{path, std::ios::binary};
+    auto getExtension = [](std::string_view path, std::string_view& extension)
+    {
+        Index dot = path.find_last_of('.');
+        if (dot == std::string_view::npos || dot + 1 == path.length())
+            return false;
+        extension = path.substr(dot + 1);
+        return true;
+    };
+
+    std::ofstream os{std::string(path), std::ios::binary};
     if (!os.is_open())
         return nullptr;
     
     if constexpr (std::is_same<IW, ImageWriter>{})
     {
-        if (format.empty())
-        {
-            format = path.extension().c_str();
-            if (format.empty()) return nullptr;
-            format = format.substr(1);
-        }
+        std::string_view fmtStr = format;
+        if (fmtStr.empty() && !getExtension(path, fmtStr))
+            return nullptr;
 
-        if (format == "ppm")
+        if (fmtStr == "ppm")
             return std::make_unique<PPMWriter>(std::move(os));
         // else if ()
 

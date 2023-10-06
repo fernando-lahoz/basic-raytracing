@@ -9,8 +9,6 @@
 #include "image_writer.hpp"
 #include "tone_mapping.hpp"
 
-#define EOL '\n'
-
 namespace program {
 
 static std::string_view name;
@@ -91,16 +89,13 @@ auto usage(int argc, char *argv[])
             if (foundStrategy)
                 program::exit("Strategy is defined more than once.");
 
-            if (pos <= str.length())
+            if (pos >= str.length())
             {
                 if (++i == argc)
                     program::exit("No strategy specified.");
                 strategy = argv[i];
             }
-            else 
-            {
-                strategy = str.substr(pos);
-            }         
+            else { strategy = str.substr(pos);}            
 
             foundStrategy = true;
         }
@@ -109,32 +104,19 @@ auto usage(int argc, char *argv[])
             if (foundOutputFmt)
                 program::exit("Output format is defined more than once.");
 
-            if (pos <= str.length())
+            if (pos >= str.length())
             {
                 if (++i == argc)
                     program::exit("No strategy specified.");
                 format = argv[i];
             }
-            else 
-            {
-                format = str.substr(pos);
-            }         
+            else { format = str.substr(pos); } 
+
             foundOutputFmt = true;
         }
-        else if (foundSrc)
-        {
-            destination = str;
-            foundDst = true;
-        }
-        else if (!foundSrc)
-        {
-            source = str;
-            foundSrc = true;
-        }
-        else
-        {
-            program::exit("Wrong number of arguments.");
-        }  
+        else if (foundSrc) { destination = str; foundDst = true; }
+        else if (!foundSrc) { source = str; foundSrc = true; }
+        else program::exit("Wrong number of arguments.");
     }
 
     if (!foundSrc)
@@ -150,11 +132,6 @@ int main(int argc, char* argv[])
 {
     auto [source, destination, strategy, format] = usage(argc, argv);
 
-    std::cout << source << EOL;
-    std::cout << destination << EOL;
-    std::cout << strategy << EOL;
-    std::cout << format << EOL;
-
     auto reader = makeImageReader(source);
     if (reader == nullptr)
         program::exit("Could not open souce file.");
@@ -163,7 +140,7 @@ int main(int argc, char* argv[])
     if (!reader->read(img))
         program::exit("Could not read any image from source file.");
 
-    auto writer = makeImageWriter(destination);
+    auto writer = makeImageWriter(destination, format);
     if (writer == nullptr)
         program::exit("Could not open destination file or format not available.");
 

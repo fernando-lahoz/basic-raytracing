@@ -26,10 +26,10 @@ set(SubProjects
 
 set(Libraries
     # AÑADIR AQUÍ LAS BIBLIOTECAS
-    color_spaces
     geometry
     tone_mapping
     image
+    color_spaces #después de image, sino da problemas del linker
     format/ppm
 )
 

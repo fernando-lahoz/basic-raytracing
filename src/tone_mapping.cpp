@@ -44,15 +44,16 @@ std::unique_ptr<TM> checkStrategy(Index dots,std::string_view strategy)
 
         auto predots = dots;
         dots = strategy.find_first_of(':', dots + 1);
-        auto num = strategy.substr(predots + 1, dots);
+        auto num = strategy.substr(predots + 1, dots - (predots + 1));
         if (num.empty())
             return nullptr;
 
         const char* begin = num.data(), *end = num.data() + num.length();
         auto res = std::from_chars(begin, end, params[i]);
-        if (res.ec == std::errc{})
+        if (res.ec != std::errc{})
             return nullptr;
     }
+
     if constexpr (TM::nParams == 0) return std::make_unique<TM>();
     else if constexpr (TM::nParams == 1) return std::make_unique<TM>(params[0]);
     else if constexpr (TM::nParams == 2) return std::make_unique<TM>(params[0], params[1]);
