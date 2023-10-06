@@ -18,10 +18,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
 
 include_directories(include src test)
 
-#set(Executable main)
-#set(Executable test_base_inverse_identity)
-set(Executable test_ppm_parser)
-#set(Executable test_planetary_station)
+set(Executable tone_mapper)
 
 set(SubProjects
     #... NO DEBERÍA SER NECESARIO
@@ -29,8 +26,10 @@ set(SubProjects
 
 set(Libraries
     # AÑADIR AQUÍ LAS BIBLIOTECAS
-    geometry
     color_spaces
+    geometry
+    tone_mapping
+    image
     format/ppm
 )
 
@@ -51,7 +50,7 @@ foreach(Lib IN LISTS Libraries)
         string(SUBSTRING ${Lib} ${BarPos} -1 LibName)
         set(LibNames "${LibNames};${LibName}")
     endif()
-    add_library(${LibName} "src/${Lib}.cpp")
+    add_library(${LibName} STATIC "src/${Lib}.cpp")
 endforeach()
 
 find_file (ExecutablePath "${Executable}.cpp" PATHS src test)

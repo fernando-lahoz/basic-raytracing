@@ -3,10 +3,11 @@
 #include <vector>
 
 #include "numbers.hpp"
-#include "tone_mapping.hpp"
 #include "color_spaces.hpp"
 
 #include "format/ppm.hpp"
+
+class ToneMappingStrategy;
 
 struct Dimensions
 {
@@ -61,7 +62,7 @@ public:
      * 
      * @return Number of pixels in this image
      */
-    Index pixels() { return blueBuffer.size(); }
+    Index pixels() const { return blueBuffer.size(); }
 
     /**
      * @return This image dimensions: `{ width, height }`.
@@ -94,16 +95,7 @@ public:
         return {redBuffer[i], greenBuffer[i], blueBuffer[i]};
     }
 
-    void toneMap(const ToneMappingStrategy& f)
-    {
-        Image& img = *this;
-        for (Index i = 0; i < img.pixels(); ++i)
-        {
-            auto [h, s, v] = HSVPixel::fromRGB(img(i), maxLuminance);
-            maxLuminance = 1;
-            img(i) = HSVPixel::toRGB({h, s, f(v)}, maxLuminance);
-        }
-    }
+    void toneMap(const ToneMappingStrategy& func);
 
     friend bool ppm::read(std::istream& is, Image& img);
     friend void ppm::write(std::ostream& os, const Image& img);

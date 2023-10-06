@@ -14,7 +14,7 @@ struct HSVPixel
 {
     Real h, s, v;
 
-    static HSVPixel fromRGB(Pixel p, Real maxLuminance);
+    static HSVPixel fromRGB(Pixel p);
 
-    static Pixel toRGB(HSVPixel p, Real maxLuminance);
+    static Pixel toRGB(HSVPixel p);
 };

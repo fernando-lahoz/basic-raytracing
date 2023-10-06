@@ -3,32 +3,29 @@
 /*
  * https://www.rapidtables.com/convert/color/rgb-to-hsv.html
  */
-HSVPixel HSVPixel::fromRGB(Pixel p, Real maxLuminance)
+HSVPixel HSVPixel::fromRGB(Pixel p)
 {
     auto mod = [](Real x, Natural n) -> Real
-        { return std::abs(x - n * static_cast<Natural>(x / n)); };
+        { return x - n * static_cast<Natural>(x / n); };
 
-    Real r = p.r / maxLuminance;
-    Real g = p.g / maxLuminance;
-    Real b = p.b / maxLuminance;
-
+    auto [r, g, b] = p;
     Real max, min;
     max = numbers::max(r, g, b);
     min = numbers::min(r, g, b);
 
     Real diff = max - min;
+
     auto getH = [&]() -> Real
     {
         if (diff == 0)          return 0;
-        else if (max == r)      return 60 * mod(((g - b) / diff), 6);
+        else if (max == r)      return 60 * mod((std::abs(g - b) / diff), 6);
         else if (max == g)      return 60 * (((b - r) / diff) + 2);
         else /* max ==  b */    return 60 * (((r - g) / diff) + 4);
     };
 
     Real h = getH();
     Real s = max == 0 ? 0 : diff / max;
-    //Real v = max;
-    Real v = max * maxLuminance;
+    Real v = max;
 
     return {h, s, v};
 }
@@ -36,17 +33,16 @@ HSVPixel HSVPixel::fromRGB(Pixel p, Real maxLuminance)
 /*
  * https://www.rapidtables.com/convert/color/hsv-to-rgb.html
  */
-Pixel HSVPixel::toRGB(HSVPixel p, Real maxLuminance)
+Pixel HSVPixel::toRGB(HSVPixel p)
 {
     auto mod = [](Real x, Natural n) -> Real
-        { return std::abs(x - n * static_cast<Natural>(x / n)); };
+        { return x - n * static_cast<Natural>(x / n); };
 
-    const Real nv = p.v / maxLuminance;
-    const Real c = nv * p.s;
+    const Real c = p.v * p.s;
     const Real x = c * (1 - std::abs(mod(p.h / 60, 2) - 1));
-    const Real m = nv - c;
+    const Real m = p.v - c;
 
-    auto getRGBnormalized = [&]() -> Pixel
+    auto getRGB = [&]() -> Pixel
     {
         if (p.h < 60)         return {c, x, 0};
         else if (p.h < 120)   return {x, c, 0};
@@ -56,10 +52,7 @@ Pixel HSVPixel::toRGB(HSVPixel p, Real maxLuminance)
         else /* p.h < 360 */  return {c, 0, x};
     };
 
-    auto [r, g, b] = getRGBnormalized();
+    auto [r, g, b] = getRGB();
 
-    auto denormalize = [&](Real x) -> Real
-        { return (x + m) * maxLuminance; };
-
-    return {denormalize(r), denormalize(g), denormalize(b)};
+    return {r + m, g + m, b + m};
 }

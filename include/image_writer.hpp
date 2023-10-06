@@ -19,24 +19,18 @@ protected:
     ImageWriter(std::ofstream&& os_) : os(std::move(os_)) {}
 public:
     virtual void write(const Image& img) = 0;
-
-    template <typename IW>
-    friend std::unique_ptr<ImageWriter> makeImageWriter(std::filesystem::path path);
 };
 
 class PPMWriter : public ImageWriter
 {
-private:
-    PPMWriter(std::ofstream&& os_) : ImageWriter(std::move(os_)) {}
 public:
-    virtual void write(const Image& img) override { ppm::write(os, img); }
+    PPMWriter(std::ofstream&& os_) : ImageWriter(std::move(os_)) {}
 
-    template <typename IW>
-    friend std::unique_ptr<ImageWriter> makeImageWriter(std::filesystem::path path);
+    virtual void write(const Image& img) override { ppm::write(os, img); }
 };
 
 template <typename IW = ImageWriter>
-[[nodiscard]] std::unique_ptr<ImageWriter> makeImageWriter(std::filesystem::path path)
+[[nodiscard]] std::unique_ptr<ImageWriter> makeImageWriter(std::filesystem::path path, std::string_view format = "")
 {
     std::ofstream os{path, std::ios::binary};
     if (!os.is_open())
@@ -44,13 +38,20 @@ template <typename IW = ImageWriter>
     
     if constexpr (std::is_same<IW, ImageWriter>{})
     {
-        if (path.extension() == ".ppm")
-            return std::unique_ptr<PPMWriter>{new PPMWriter{std::move(os)}};
+        if (format.empty())
+        {
+            format = path.extension().c_str();
+            if (format.empty()) return nullptr;
+            format = format.substr(1);
+        }
+
+        if (format == "ppm")
+            return std::make_unique<PPMWriter>(std::move(os));
         // else if ()
 
         return nullptr;
     }
     else {
-        return std::unique_ptr<IW>{new IW{std::move(os)}};
+        return std::make_unique<IW>(std::move(os));
     }
 }

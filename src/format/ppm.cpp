@@ -13,7 +13,8 @@ void ppm::write(std::ostream& os, const Image& img)
 {
     auto outputValue = [&](Real v) -> Natural
     {
-        return std::round(v * (img.colorResolution / img.maxLuminance));
+        Natural val = std::round(v * (img.colorResolution / img.maxLuminance));
+        return numbers::min(val, img.resolution());
     };
 
     auto toString = [](Real x)
@@ -38,9 +39,9 @@ void ppm::write(std::ostream& os, const Image& img)
     {   
         for (Index j = 0; j < width; ++j)
         {
-            os << std::to_string(outputValue(img.redBuffer[i])) << ' ';
-            os << std::to_string(outputValue(img.greenBuffer[i])) << ' ';
-            os << std::to_string(outputValue(img.blueBuffer[i])) << ' ';
+            os << std::to_string(outputValue(img.redBuffer[i * width + j])) << ' ';
+            os << std::to_string(outputValue(img.greenBuffer[i * width + j])) << ' ';
+            os << std::to_string(outputValue(img.blueBuffer[i * width + j])) << ' ';
         }
         os << '\n';
     }
