@@ -1,5 +1,5 @@
 #include "tone_mapping.hpp"
-
+#include "meta/unfold_array.hpp"
 
 Real Clamping::operator()(const Image&, Real v) const
 {
@@ -26,7 +26,6 @@ Real Gamma_Clamping::operator()(const Image&, Real v) const
     return std::pow(std::min(v, limit) / limit , gammaValue);
 }
 
-
 template <typename TM>
 bool checkName (std::string_view name)
 { 
@@ -36,7 +35,7 @@ bool checkName (std::string_view name)
 template <typename TM>
 std::unique_ptr<TM> checkStrategy(Index dots,std::string_view strategy)
 {
-    Real params[10];
+    Real params[TM::nParams];
     for (Index i = 0; i < TM::nParams; i++)
     {
         if (dots == std::string_view::npos)
@@ -54,10 +53,7 @@ std::unique_ptr<TM> checkStrategy(Index dots,std::string_view strategy)
             return nullptr;
     }
 
-    if constexpr (TM::nParams == 0) return std::make_unique<TM>();
-    else if constexpr (TM::nParams == 1) return std::make_unique<TM>(params[0]);
-    else if constexpr (TM::nParams == 2) return std::make_unique<TM>(params[0], params[1]);
-    else return nullptr;
+    return std::make_unique<TM>(meta::unfoldAndConstruct<TM, TM::nParams>(params));
 };
 
 std::unique_ptr<ToneMappingStrategy> makeToneMappingStrategy(std::string_view strategy)

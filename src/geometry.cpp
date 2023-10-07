@@ -62,7 +62,7 @@ Direction operator-(Point p, Point q)
 }
 
 // Producto escalar
-Real dot(Direction u, Direction v)
+Real dot(Vector u, Vector v)
 {
     return u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
 }
@@ -300,23 +300,20 @@ Transformation& Transformation::changeBase(const Base& base)
                            y[0] * z[1] - y[1] * z[0] };
     };
 
-    auto dotP = [](Vector p, Vector d)
-        { return p[0]*d[0] + p[1]*d[1] + p[2]*d[2]; };
-
     auto divide = [](Vector& d, Real k)
         { d[0] /= k; d[1] /= k; d[2] /= k; d[3] /= k; };
 
     Vector row0 = getCofactorFrom(base.v, base.w);
 
-    Real det = dotP(base.u, row0);
+    Real det = dot(base.u, row0);
 
     Vector row1 = getCofactorFrom(base.w, base.u);
     Vector row2 = getCofactorFrom(base.u, base.v);
     Point row3 {};
 
-    row0[3] = - dotP(base.o, row0);
-    row1[3] = - dotP(base.o, row1);
-    row2[3] = - dotP(base.o, row2);
+    row0[3] = - dot(base.o, row0);
+    row1[3] = - dot(base.o, row1);
+    row2[3] = - dot(base.o, row2);
 
     divide(row0, det);
     divide(row1, det);

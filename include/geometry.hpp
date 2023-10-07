@@ -70,7 +70,7 @@ public:
 [[nodiscard]] Direction operator-(Point p, Point q);
 
 // Producto escalar
-[[nodiscard]] Real dot(Direction u, Direction v);
+[[nodiscard]] Real dot(Vector u, Vector v);
 
 // Producto vectorial
 [[nodiscard]] Direction cross(Direction u, Direction v);

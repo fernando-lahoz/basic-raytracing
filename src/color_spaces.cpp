@@ -1,8 +1,5 @@
 #include "color_spaces.hpp"
 
-/*
- * https://www.rapidtables.com/convert/color/rgb-to-hsv.html
- */
 HSVPixel HSVPixel::fromRGB(Pixel p)
 {
     auto mod = [](Real x, Natural n) -> Real
@@ -30,9 +27,6 @@ HSVPixel HSVPixel::fromRGB(Pixel p)
     return {h, s, v};
 }
 
-/*
- * https://www.rapidtables.com/convert/color/hsv-to-rgb.html
- */
 Pixel HSVPixel::toRGB(HSVPixel p)
 {
     auto mod = [](Real x, Natural n) -> Real
