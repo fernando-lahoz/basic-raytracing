@@ -1,3 +1,5 @@
+#include <optional>
+
 #include "geometry.hpp"
 
 struct Ray
@@ -6,15 +8,14 @@ struct Ray
     Direction d; // must be normalized
 };
 
-struct IntersectResult
+struct Intersection
 {
     Point intersection;
     Direction normal;
-    bool intersects;
 };
 
 class Shape 
 {
 public:
-    virtual IntersectResult intersect(Ray ray) const = 0;
+    virtual std::optional<Intersection> intersect(Ray ray) const = 0;
 };

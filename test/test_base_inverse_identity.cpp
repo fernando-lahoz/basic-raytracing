@@ -50,7 +50,7 @@ int main()
 
     
 */
-    auto seconds = benchmark(100000000, [&]()
+    auto seconds = benchmark(1000000000, [&]()
     {
         t.changeBase(b).revertBase(b);
         //t.apply(cb).apply(rb);

@@ -3,7 +3,7 @@ project (inf_grafica LANGUAGES CXX)
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -std=c++20 -save-temps -static-libstdc++")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fno-exceptions -march=native")
 
 # Saber si estoy en un sistema de 32 o 64 bits
 set(OSBitness 32)
@@ -18,7 +18,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
 
 include_directories(include src test)
 
-set(Executable tone_mapper)
+#set(Executable tone_mapper)
+set(Executable test_intersections)
 
 set(SubProjects
     #... NO DEBERÍA SER NECESARIO
@@ -31,6 +32,7 @@ set(Libraries
     image
     color_spaces #después de image, sino da problemas del linker
     format/ppm
+    shapes/sphere
 )
 
 foreach(Project IN LISTS SubProjects)
