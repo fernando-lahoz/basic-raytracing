@@ -3,15 +3,14 @@
 struct Ray
 {
     Point p;
-    Direction d;
+    Direction d; // must be normalized
 };
 
-union IntersectResult
+struct IntersectResult
 {
     Point intersection;
-    Real check;
-
-    bool intersects() { return std::isinf(check); }
+    Direction normal;
+    bool intersects;
 };
 
 class Shape 
