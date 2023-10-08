@@ -32,8 +32,7 @@ set(Libraries
     image
     color_spaces #después de image, sino da problemas del linker
     format/ppm
-    shapes/sphere
-    shapes/plane
+    shapes
 )
 
 foreach(Project IN LISTS SubProjects)

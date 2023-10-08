@@ -4,7 +4,7 @@
 
 class Plane : public Shape
 {
-private:
+protected:
     Point o;
     Direction n;
 public:

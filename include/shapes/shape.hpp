@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geometry.hpp"
+#include "color_spaces.hpp"
 
 struct Ray
 {
@@ -12,10 +13,7 @@ struct Ray
     Point hitPoint(Real t) { return p + d * t; }
 };
 
-struct Emission
-{
-    Real r, g, b;
-};
+struct Emission : RGBTuple {};
 
 class Shape 
 {

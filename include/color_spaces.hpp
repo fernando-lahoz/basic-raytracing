@@ -5,16 +5,21 @@
 
 #include "numbers.hpp"
 
-struct Pixel
+struct RGBTuple
 {
     Real r, g, b;
 };
 
-struct HSVPixel
+struct RGBPixel : RGBTuple {};
+
+struct HSVTuple
 {
     Real h, s, v;
+};
 
-    static HSVPixel fromRGB(Pixel p);
+struct HSVPixel : HSVTuple
+{
+    static HSVPixel fromRGB(RGBPixel p);
 
-    static Pixel toRGB(HSVPixel p);
+    static RGBPixel toRGB(HSVPixel p);
 };

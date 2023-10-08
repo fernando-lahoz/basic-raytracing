@@ -1,6 +1,6 @@
 #include "color_spaces.hpp"
 
-HSVPixel HSVPixel::fromRGB(Pixel p)
+HSVPixel HSVPixel::fromRGB(RGBPixel p)
 {
     auto mod = [](Real x, Natural n) -> Real
         { return x - n * static_cast<Natural>(x / n); };
@@ -27,7 +27,7 @@ HSVPixel HSVPixel::fromRGB(Pixel p)
     return {h, s, v};
 }
 
-Pixel HSVPixel::toRGB(HSVPixel p)
+RGBPixel HSVPixel::toRGB(HSVPixel p)
 {
     auto mod = [](Real x, Natural n) -> Real
         { return x - n * static_cast<Natural>(x / n); };
@@ -36,7 +36,7 @@ Pixel HSVPixel::toRGB(HSVPixel p)
     const Real x = c * (1 - std::abs(mod(p.h / 60, 2) - 1));
     const Real m = p.v - c;
 
-    auto getRGB = [&]() -> Pixel
+    auto getRGB = [&]() -> RGBPixel
     {
         if (p.h < 60)         return {c, x, 0};
         else if (p.h < 120)   return {x, c, 0};

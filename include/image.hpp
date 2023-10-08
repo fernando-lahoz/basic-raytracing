@@ -42,14 +42,14 @@ public:
 
         friend class Image;
     public:
-        void operator=(Pixel p)
+        void operator=(RGBPixel p)
         {
             img.redBuffer[index] = p.r;
             img.greenBuffer[index] = p.g;
             img.blueBuffer[index] = p.b;
         }
 
-        operator Pixel () const
+        operator RGBPixel () const
         {
             return {img.redBuffer[index],
                     img.greenBuffer[index],
@@ -80,7 +80,7 @@ public:
         return {*this, i*nColumns + j};
     }
 
-    Pixel operator()(Index i, Index j) const
+    RGBPixel operator()(Index i, Index j) const
     {
         return (*this)(i*nColumns + j);
     }
@@ -90,7 +90,7 @@ public:
         return {*this, i};
     }
 
-    Pixel operator()(Index i) const
+    RGBPixel operator()(Index i) const
     {
         return {redBuffer[i], greenBuffer[i], blueBuffer[i]};
     }

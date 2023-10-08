@@ -4,7 +4,7 @@
 
 class Sphere : public Shape
 {
-private:
+protected:
     Point c;
     Real r;
 public:

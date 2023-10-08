@@ -1,7 +1,6 @@
 #include <iostream>
 
-#include "shapes/plane.hpp"
-#include "shapes/sphere.hpp"
+#include "shapes.hpp"
 
 void testIntersection(const Shape& object, Ray ray)
 {
@@ -20,24 +19,44 @@ void testIntersection(const Shape& object, Ray ray)
 
 int main()
 {
+    {
+        Ray ray {.p = {0, 0, 0}, .d = normalize({1, 0, 0})};
+
+        const Real radius = 1;
+        const Point center {1, 1, 0};
+
+        std::cout << "Ray{.origin = " << ray.p << ", .direction = " << ray.d << "}\n";
+        std::cout << "Sphere{.radius = " << radius << ", .center = " << center << "}\n";
+        testIntersection(Sphere{center, radius, {255, 0, 255}}, ray);
+        std::cout << std::endl;
+    }
     
-    Ray ray {.p = {0, 0, 0}, .d = normalize({1, 0, 0})};
-
-    const Real radius = 1;
-    const Point center {1, 1, 0};
-
-    std::cout << "Sphere{.radius = " << radius << ", .center = " << center << "}\n";
-    testIntersection(Sphere{center, radius, {255, 0, 255}}, ray);
-    std::cout << std::endl;
-
     //------------------------------------------------------------------------------
 
-    const Direction normal = {-1, 1, 0};
-    const Point reference {1, 1, 0};
+    {
+        Ray ray {.p = {0, 0, 0}, .d = normalize({1, 0, 0})};
 
-    std::cout << "Plane{.normal = " << normal << ", .reference = " << reference << "}\n";
-    testIntersection(Plane{reference, normal, {255, 0, 255}}, ray);
-    std::cout << std::endl;
+        const Direction normal = {-1, 1, 0};
+        const Point reference {1, 1, 0};
 
-    return 0;
+        std::cout << "Ray{.origin = " << ray.p << ", .direction = " << ray.d << "}\n";
+        std::cout << "Plane{.normal = " << normal << ", .reference = " << reference << "}\n";
+        testIntersection(Plane{reference, normal, {255, 0, 255}}, ray);
+        std::cout << std::endl;
+    }
+    
+    //------------------------------------------------------------------------------
+
+    {
+        Ray ray {.p = {0, 0, 0}, .d = normalize({1, 0.707108, 0.707108})};
+
+        const Direction normal = {-1, 0, 0};
+        const Real radius = 1;
+        const Point center {1, 0, 0};
+
+        std::cout << "Ray{.origin = " << ray.p << ", .direction = " << ray.d << "}\n";
+        std::cout << "Disk{.normal = " << normal << ", .radius = " << radius << ", .center = " << center << "}\n";
+        testIntersection(Disk(normal, center, radius, {255, 0, 255}), ray);
+        std::cout << std::endl;
+    }
 }
