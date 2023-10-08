@@ -1,26 +1,26 @@
 #include "shapes/sphere.hpp"
 
-std::optional<Intersection> Sphere::intersect(Ray ray) const
+Real Sphere::intersect(Ray ray) const
 {
-    auto mulShift = [](Direction u, Direction v)
-    {
-        return Direction{u[0] * v[1], u[1] * v[2], u[2] * v[0]};
-    };
 
     const auto [p, d] = ray;
     const auto p_c = p - c;
-    const auto delta = r * r + 2 * dot(mulShift(d, d), mulShift(p_c, p_c));
+    const auto halfB = dot(d, p_c);
+    const auto C = dot(p_c, p_c) - r * r;
+    const auto delta = halfB * halfB - C;
     if (delta < 0)
-        return std::nullopt;
+        return Ray::nohit;
     
-    const auto left = -dot(d, p_c);
+    const auto left = -halfB;
     const auto right = sqrt(delta);
 
     // left > 0 & right > 0 -> left + right > 0
     // left - right < 0 === left < right -> left + right
     // else -> left - right
-    const auto t = left < right ? left - right : left + right;
+    return right <= left ? left - right : left + right;
+}
 
-    const auto hit = p + d * t;
-    return Intersection{hit, (hit - c) / r};
+Direction Sphere::normal(Point p) const
+{
+    return (p - c) / r;
 }

@@ -1,13 +1,17 @@
+#pragma once
+
 #include "shapes/shape.hpp"
 
-class Sphere : Shape
+class Sphere : public Shape
 {
 private:
     Point c;
     Real r;
 public:
-    Sphere(Point center, Real radius)
-        : c{center}, r{radius} {}
+    Sphere(Point center, Real radius, Emission color)
+        : Shape{color}, c{center}, r{radius} {}
 
-    virtual std::optional<Intersection> intersect(Ray ray) const override;
+    virtual Real intersect(Ray ray) const override;
+
+    virtual Direction normal(Point p) const override;
 };

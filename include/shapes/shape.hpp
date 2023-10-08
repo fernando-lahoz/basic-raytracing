@@ -1,4 +1,4 @@
-#include <optional>
+#pragma once
 
 #include "geometry.hpp"
 
@@ -6,16 +6,25 @@ struct Ray
 {
     Point p;
     Direction d; // must be normalized
+
+    static inline constexpr Real nohit = -1;
+
+    Point hitPoint(Real t) { return p + d * t; }
 };
 
-struct Intersection
+struct Emission
 {
-    Point intersection;
-    Direction normal;
+    Real r, g, b;
 };
 
 class Shape 
 {
+protected:
+    Emission emission;
+
+    Shape (Emission color) : emission{color} {}
 public:
-    virtual std::optional<Intersection> intersect(Ray ray) const = 0;
+    virtual Real intersect(Ray ray) const = 0;
+
+    virtual Direction normal(Point p) const = 0;
 };
