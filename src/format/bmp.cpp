@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <ranges>
+#include <cstdint>
 
 #include <iostream>
 
@@ -110,9 +111,9 @@ struct DirectExtractor : Extractor
         static Natural recordedBits = 0;
 
         WordT red, green, blue;
-        if (!extractColor(is, word, red, bitcount / 3, extracted)) return false;
-        if (!extractColor(is, word, green, bitcount / 3, extracted)) return false;
         if (!extractColor(is, word, blue, bitcount / 3, extracted)) return false;
+        if (!extractColor(is, word, green, bitcount / 3, extracted)) return false;
+        if (!extractColor(is, word, red, bitcount / 3, extracted)) return false;
 
         pixel.r = inputValue(red);
         pixel.g = inputValue(green);

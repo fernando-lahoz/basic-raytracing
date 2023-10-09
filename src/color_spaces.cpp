@@ -5,7 +5,10 @@
 HSVPixel HSVPixel::fromRGB(RGBPixel p)
 {
     auto mod = [](Real x, Natural n) -> Real
-        { return x - n * static_cast<Natural>(x / n); };
+    {   
+        if (x < 0) return n - x;
+        return x - n * static_cast<Natural>(x / n); 
+    };
 
     auto [r, g, b] = p;
     Real max, min;
@@ -17,7 +20,7 @@ HSVPixel HSVPixel::fromRGB(RGBPixel p)
     auto getH = [&]() -> Real
     {
         if (diff == 0)          return 0;
-        else if (max == r)      return 60 * mod((std::abs(g - b) / diff), 6);
+        else if (max == r)      return 60 * mod(((g - b) / diff), 6);
         else if (max == g)      return 60 * (((b - r) / diff) + 2);
         else /* max ==  b */    return 60 * (((r - g) / diff) + 4);
     };
@@ -37,8 +40,6 @@ RGBPixel HSVPixel::toRGB(HSVPixel p)
     const Real c = p.v * p.s;
     const Real x = c * (1 - std::abs(mod(p.h / 60, 2) - 1));
     const Real m = p.v - c;
-
-    if (p.h < 0) std::cout << "Negative h: " << p.h << '\n';
 
     auto getRGB = [&]() -> RGBPixel
     {
