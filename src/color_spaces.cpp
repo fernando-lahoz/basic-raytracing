@@ -1,5 +1,7 @@
 #include "color_spaces.hpp"
 
+#include <iostream>
+
 HSVPixel HSVPixel::fromRGB(RGBPixel p)
 {
     auto mod = [](Real x, Natural n) -> Real
@@ -35,6 +37,8 @@ RGBPixel HSVPixel::toRGB(HSVPixel p)
     const Real c = p.v * p.s;
     const Real x = c * (1 - std::abs(mod(p.h / 60, 2) - 1));
     const Real m = p.v - c;
+
+    if (p.h < 0) std::cout << "Negative h: " << p.h << '\n';
 
     auto getRGB = [&]() -> RGBPixel
     {

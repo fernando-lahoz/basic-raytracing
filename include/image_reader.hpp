@@ -4,6 +4,8 @@
 #include <memory>
 
 #include "image.hpp"
+#include "format/ppm.hpp"
+#include "format/bmp.hpp"
 
 class ImageReader
 {
@@ -23,6 +25,14 @@ public:
     [[nodiscard]] virtual bool read(Image& img) override { return ppm::read(is, img); }
 };
 
+class BMPReader : public ImageReader
+{
+public:
+    BMPReader(std::ifstream&& is_) : ImageReader(std::move(is_)) {}
+
+    [[nodiscard]] virtual bool read(Image& img) override { return bmp::read(is, img); }
+};
+
 [[nodiscard]] std::unique_ptr<ImageReader> makeImageReader(std::string_view path)
 {
     std::ifstream is{std::string{path}, std::ios::binary};
@@ -35,7 +45,7 @@ public:
     switch (magicNumber)
     {
     case 0x3350: return std::make_unique<PPMReader>(std::move(is)); //P3
-    //case 0x4D42: return std::make_unique<BMPReader>(is); //BM
+    case 0x4D42: return std::make_unique<BMPReader>(std::move(is)); //BM
     default:
         return nullptr;
     }

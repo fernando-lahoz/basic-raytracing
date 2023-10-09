@@ -13,7 +13,7 @@ void ppm::write(std::ostream& os, const Image& img)
 {
     auto outputValue = [&](Real v) -> Natural
     {
-        Natural val = std::round(v * (img.colorResolution / img.maxLuminance));
+        Natural val = std::round(v * (img.resolution() / img.luminance()));
         return numbers::min(val, img.resolution());
     };
 
@@ -29,19 +29,20 @@ void ppm::write(std::ostream& os, const Image& img)
         return ss.str();
     };
 
-    os << "P3\n";
-    if (img.maxLuminance != 1)
-        os << "#MAX=" << toString(img.maxLuminance) << '\n';
-    os << std::to_string(img.nColumns) << ' ' << std::to_string(img.nRows) << '\n';
-    os << std::to_string(img.colorResolution) << '\n';
     auto [width, height] = img.dimensions();
+
+    os << "P3\n";
+    if (img.luminance() != 1)
+        os << "#MAX=" << toString(img.luminance()) << '\n';
+    os << std::to_string(width) << ' ' << std::to_string(height) << '\n';
+    os << std::to_string(img.resolution()) << '\n';
     for (Index i = 0; i < height; ++i)
     {   
         for (Index j = 0; j < width; ++j)
         {
-            os << std::to_string(outputValue(img.redBuffer[i * width + j])) << ' ';
-            os << std::to_string(outputValue(img.greenBuffer[i * width + j])) << ' ';
-            os << std::to_string(outputValue(img.blueBuffer[i * width + j])) << ' ';
+            os << std::to_string(outputValue(img.red(i, j))) << ' ';
+            os << std::to_string(outputValue(img.green(i, j))) << ' ';
+            os << std::to_string(outputValue(img.blue(i, j))) << ' ';
         }
         os << '\n';
     }
@@ -137,10 +138,14 @@ bool ppm::read(std::istream& is, Image& img)
     enum NextValue { WIDTH, HEIGHT, RESOLUTION, RED, GREEN, BLUE, END }; // order matters
     Index step = WIDTH;
 
+    Index width = 0, height = 0;
+    Natural resolution = 0;
+    Real luminance = 1;
+
     auto stateMachineNextStep = [&](std::string_view str)
     {
         auto inputValue = [&](Natural s) -> Real
-            { return s * (img.maxLuminance / img.colorResolution); };
+            { return (s * img.luminance()) / img.resolution(); };
 
         static Index i = 0;
         Natural temp = 0;
@@ -148,29 +153,26 @@ bool ppm::read(std::istream& is, Image& img)
 
         switch (step++)
         {
-        case WIDTH: return readNumber(str, img.nColumns);
-        case HEIGHT: return readNumber(str, img.nRows);
+        case WIDTH: return readNumber(str, width);
+        case HEIGHT: return readNumber(str, height);
         case RESOLUTION:
-                    if (readNumber(str, img.colorResolution))
+                    if (readNumber(str, resolution))
                     {
-                        Index size = img.nColumns * img.nRows;
-                        img.redBuffer.resize(size);
-                        img.greenBuffer.resize(size);
-                        img.blueBuffer.resize(size);
+                        img = Image{luminance, resolution, {width, height}};
                         return true;
                     }
                     return false;
         case RED:   ok = readNumber(str, temp);
-                    img.redBuffer[i] = inputValue(temp);
+                    img.red(i) = inputValue(temp);
                     return ok;
         case GREEN: ok = readNumber(str, temp);
-                    img.greenBuffer[i] = inputValue(temp);
+                    img.green(i) = inputValue(temp);
                     return ok;
         case BLUE:
-                    if (i < img.blueBuffer.size() - 1) step = RED;
+                    if (i < img.pixels() - 1) step = RED;
                     else step = END;
                     ok = readNumber(str, temp);
-                    img.blueBuffer[i++] = inputValue(temp);
+                    img.blue(i++) = inputValue(temp);
                     return ok;
         default:    return false;
         }
@@ -186,7 +188,7 @@ bool ppm::read(std::istream& is, Image& img)
         if (word[0] == '#')
         {
             error = (step >= RED);
-            if (!foundMAX && !error) foundMAX = checkMAX(word, buffer, img.maxLuminance);
+            if (!foundMAX && !error) foundMAX = checkMAX(word, buffer, luminance);
             return false;
         }
         error = !stateMachineNextStep(word);

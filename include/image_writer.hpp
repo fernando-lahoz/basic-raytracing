@@ -4,6 +4,8 @@
 #include <memory>
 
 #include "image.hpp"
+#include "format/ppm.hpp"
+#include "format/bmp.hpp"
 
 class ImageWriter
 {

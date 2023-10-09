@@ -5,8 +5,6 @@
 #include "numbers.hpp"
 #include "color_spaces.hpp"
 
-#include "format/ppm.hpp"
-
 class ToneMappingStrategy;
 
 struct Dimensions
@@ -26,11 +24,9 @@ private:
     Index nColumns, nRows;
 
 public:
-    Image() : Image{1, 255, {}} {}
+    Image();
 
-    Image(Real maxLum, Natural colorRes, Dimensions dim)
-        : maxLuminance{maxLum}, colorResolution{colorRes},
-            nColumns{dim.width}, nRows{dim.height} {}
+    Image(Real maxLum, Natural colorRes, Dimensions dim);
 
     class PixelProxy
     {
@@ -38,23 +34,13 @@ public:
         Image& img;
         Index index;
 
-        PixelProxy(Image& ref, Index i) : img{ref}, index{i} {}
+        PixelProxy(Image& ref, Index i);
 
         friend class Image;
     public:
-        void operator=(RGBPixel p)
-        {
-            img.redBuffer[index] = p.r;
-            img.greenBuffer[index] = p.g;
-            img.blueBuffer[index] = p.b;
-        }
+        void operator=(RGBPixel p);
 
-        operator RGBPixel () const
-        {
-            return {img.redBuffer[index],
-                    img.greenBuffer[index],
-                    img.blueBuffer[index]};
-        }
+        operator RGBPixel () const;
     };
 
     /**
@@ -62,41 +48,52 @@ public:
      * 
      * @return Number of pixels in this image
      */
-    Index pixels() const { return blueBuffer.size(); }
+    Index pixels() const;
 
     /**
      * @return This image dimensions: `{ width, height }`.
      */
-    Dimensions dimensions() const { return {nColumns, nRows}; }
+    Dimensions dimensions() const;
 
-    Real luminance() const { return maxLuminance; }
+    Real luminance() const;
 
-    Natural resolution() const { return colorResolution;}
+    Natural resolution() const;
 
-    void changeResolution(Natural c) { colorResolution = c;}
+    void changeResolution(Natural c);
 
-    PixelProxy operator()(Index i, Index j)
-    {
-        return {*this, i*nColumns + j};
-    }
+    PixelProxy operator()(Index i, Index j);
 
-    RGBPixel operator()(Index i, Index j) const
-    {
-        return (*this)(i*nColumns + j);
-    }
+    RGBPixel operator()(Index i, Index j) const;
 
-    PixelProxy operator()(Index i)
-    {
-        return {*this, i};
-    }
+    PixelProxy operator()(Index i);
 
-    RGBPixel operator()(Index i) const
-    {
-        return {redBuffer[i], greenBuffer[i], blueBuffer[i]};
-    }
+    RGBPixel operator()(Index i) const;
 
     void toneMap(const ToneMappingStrategy& func);
 
-    friend bool ppm::read(std::istream& is, Image& img);
-    friend void ppm::write(std::ostream& os, const Image& img);
+    Real& red(Index i, Index j);
+
+    Real red(Index i, Index j) const;
+
+    Real& red(Index i);
+
+    Real red(Index i) const;
+
+    Real& green(Index i, Index j);
+
+    Real green(Index i, Index j) const;
+
+    Real& green(Index i);
+
+    Real green(Index i) const;
+
+    Real& blue(Index i, Index j);
+
+    Real blue(Index i, Index j) const;
+
+    Real& blue(Index i);
+
+    Real blue(Index i) const;
 };
+
+#include "inline/image.ipp"

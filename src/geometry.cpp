@@ -93,21 +93,21 @@ void Transformation::makeIdentity(Real m[4][4])
                 m[i][j] = 0;
 }
 
-void Transformation::multiplyFromLeftBy(const Real lMatrix[4][4])
+inline void Transformation::multiplyFromLeftBy(const Real lMatrix[4][4])
 {
+    struct Vec4 { Real x, y, z, w; };
+
     for (auto j : std::views::iota(0, 4))
     {
-        Real column[4];
-        for (auto i : std::views::iota(0, 4))
-            column[i] = matrix[i][j];
+        Vec4 column {matrix[0][j], matrix[1][j], matrix[2][j], matrix[3][j]};
 
         for (auto i : std::views::iota(0, 4))
         {
-            Real sum = 0.0;
-            for (auto k : std::views::iota(0, 4))
-                sum += lMatrix[i][k] * column[k];
-
-            matrix[i][j] = sum;
+            Vec4 row {lMatrix[i][0], lMatrix[i][1], lMatrix[i][2], lMatrix[i][3]};
+            matrix[i][j] =  column.x * row.x + 
+                            column.y * row.y +
+                            column.z * row.z +
+                            column.w * row.w;
         }   
     }
 }
