@@ -59,4 +59,13 @@ int main()
         testIntersection(Disk(normal, center, radius, {255, 0, 255}), ray);
         std::cout << std::endl;
     }
+
+    {
+        Ray ray {.p = {0, 0, 0}, .d = normalize({1, 0, 0})};
+        // NOT TESTED
+        const PlainPoint points[3] = {{0,0}, {0,0}, {0,0}};
+        Polygon<3> triangle {points, {1, 1, 1}, {1, 0, 0}, {1, 1, 0}, {0, 0, 0}};
+        testIntersection(triangle, ray);
+        std::cout << std::endl;
+    }
 }

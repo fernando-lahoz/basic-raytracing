@@ -13,8 +13,3 @@ Real Disk::intersect(Ray ray) const
 
     return t;
 }
-
-Direction Disk::normal([[maybe_unused]] Point p) const
-{
-    return n;
-}

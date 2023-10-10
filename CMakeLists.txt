@@ -18,8 +18,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
 
 include_directories(include src test)
 
-set(Executable tone_mapper)
-#set(Executable test_intersections)
+#set(Executable tone_mapper)
+set(Executable test_intersections)
 #set(Executable test_base_inverse_identity)
 
 set(SubProjects
