@@ -25,6 +25,14 @@ public:
     virtual void write(const Image& img) override { ppm::write(os, img); }
 };
 
+class BMPWriter : public ImageWriter
+{
+public:
+    BMPWriter(std::ofstream&& os_) : ImageWriter(std::move(os_)) {}
+
+    virtual void write(const Image& img) override { bmp::write(os, img); }
+};
+
 template <typename IW = ImageWriter>
 [[nodiscard]] std::unique_ptr<ImageWriter> makeImageWriter(std::string_view path, std::string_view format = "")
 {
@@ -49,8 +57,8 @@ template <typename IW = ImageWriter>
 
         if (fmtStr == "ppm")
             return std::make_unique<PPMWriter>(std::move(os));
-        // else if ()
-
+        else if (fmtStr == "bmp")
+            return std::make_unique<BMPWriter>(std::move(os));
         return nullptr;
     }
     else {

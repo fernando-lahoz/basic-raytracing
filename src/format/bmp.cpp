@@ -211,8 +211,7 @@ struct FixedExtractor : Extractor
         // std::cout << "{" << pixel.r << ", " << pixel.g << ", " << pixel.b << "}\n";
 
         recordedBits += 3 * wordsize;
-        auto dim = img.dimensions();
-        if (j + 1 == dim.width)
+        if (j + 1 == img.dimensions().width)
         {
             Natural paddingBytes = (4 - (recordedBits % 32) / 8) % 4;
             is.seekg(paddingBytes, std::istream::cur);
@@ -298,7 +297,7 @@ bool bmp::read(std::istream& is, Image& img)
         return loopRaster(extractor);
     }
 
-    //is.seekg(header.dataOffset - 2);
+    is.seekg(header.dataOffset);
 
     std::cout << '\n';
     std::cout << "Cuurrent position: " << is.tellg() << '\n';
@@ -337,7 +336,198 @@ bool bmp::read(std::istream& is, Image& img)
     return false;
 }
 
-void bmp::write(std::ostream& /*os*/, const Image& /*img*/)
+template <typename Ty>
+void writeValue(std::ostream& os, Ty& value)
 {
+    os.write(reinterpret_cast<char*>(&value), sizeof(Ty));
+}
 
+template <typename Ty, typename BTy>
+Ty narrow(BTy x) { return static_cast<Ty>(x); }
+
+struct Inserter
+{
+    virtual void operator()(RGBPixel pixel, Index j) = 0;
+};
+
+// State machine per row
+template <typename WordT>
+struct DirectInserter : Inserter
+{
+    std::ostream& os;
+    const Natural bitcount;
+    const Image& img;
+
+    DirectInserter(std::ostream& os_, Natural bc_, const Image& img_)
+        : os{os_}, bitcount{bc_}, img{img_}
+    {}
+
+    virtual void operator()(RGBPixel pixel, Index j) override
+    {
+    }
+};
+
+struct IndirectInserter : Inserter
+{
+    using WordT = _1byte;
+
+    std::ostream& os;
+    const Natural bitcount;
+    const Image& img;
+    const ColorTable& colorTable;
+
+    IndirectInserter(std::ostream& os_, Natural bc_,
+            const Image& img_, const ColorTable& ct_)
+        : os{os_}, bitcount{bc_}, img{img_}, colorTable{ct_}
+    {}
+
+    virtual void operator()(RGBPixel pixel, Index j) override
+    {}
+};
+
+template <typename WordT>
+struct FixedInserter : Inserter
+{
+    std::ostream& os;
+    const Image& img;
+
+    FixedInserter(std::ostream& os_, const Image& img_)
+        : os{os_}, img{img_}
+    {}
+
+    virtual void operator()(RGBPixel pixel, Index j) override
+    {
+        auto outputValue = [&](Real v) -> Natural
+        {
+            Natural val = std::round(v * (img.resolution() / img.luminance()));
+            return numbers::min(val, img.resolution());
+        };
+
+        static constexpr Natural wordsize = sizeof(WordT) * 8;
+
+        static Natural recordedBits = 0;
+
+        WordT blue = outputValue(pixel.b);
+        WordT green = outputValue(pixel.g);
+        WordT red = outputValue(pixel.r);
+
+        writeValue(os, blue);
+        writeValue(os, green);
+        writeValue(os, red);
+
+        recordedBits += 3 * wordsize;
+        if (j + 1 == img.dimensions().width)
+        {
+            Natural paddingBytes = (4 - (recordedBits % 32) / 8) % 4;
+            _1byte padding[3] {0, 0, 0};
+            os.write(reinterpret_cast<char*>(padding), paddingBytes);
+            // std::cout << "RecordedBits: " << recordedBits << "\n";
+            // std::cout << "Padding: " << paddingBytes << "\n";
+            recordedBits = 0;
+        }
+    }
+};
+
+
+//Does not implement color table (bitsPerPixel <= 8) nor compression
+void bmp::write(std::ostream& os, const Image& img)
+{
+    auto [width, height] = img.dimensions();
+
+    auto msb = [](Natural x) { Natural r{}; while (x >>= 1) r++; return r; };
+
+    Natural bitsPerPixel = (msb(img.resolution()) + 1) * 3;
+    Natural bitsPerRow = width * bitsPerPixel;
+    Natural paddingPerRow = (32 - (bitsPerRow % 32)) % 32;
+    Natural rowSize = (bitsPerRow + paddingPerRow) / 8;
+    Natural colorTableSize = 0; // not going to implement
+    Natural fileSize = 54 + height * rowSize + colorTableSize;
+
+    std::cout << "bitsPerPixel = " << bitsPerPixel << '\n';
+    std::cout << "bitsPerRow = " << bitsPerRow << '\n';
+    std::cout << "paddingPerRow = " << paddingPerRow << '\n';
+    std::cout << "rowSize = " << rowSize << '\n';
+    std::cout << "colorTableSize = " << colorTableSize << '\n';
+    std::cout << "fileSize = " << fileSize << '\n';
+
+    Header header
+    {
+        .fileSize = narrow<_4byte>(fileSize),
+        .maxLuminance = narrow<_Float32>(img.luminance()),
+        .dataOffset = narrow<_4byte>(54 + colorTableSize)
+    };
+
+    InfoHeader info
+    {
+        .size = 40,
+        .width = narrow<_4byte>(width),
+        .height = narrow<_4byte>(height),
+        .planes = 1,
+        .bitcount = narrow<_2byte>(bitsPerPixel),
+        .compression = 0,
+        .imageSize = narrow<_4byte>(header.fileSize - header.dataOffset),
+        .unused = {}
+    };
+
+    std::cout << "HEADER: \n";
+    std::cout << "fileSize: " << header.fileSize << '\n';
+    std::cout << "maxLuminance: " << header.maxLuminance << '\n';
+    std::cout << "dataOffset: " << header.dataOffset << '\n';
+    std::cout << '\n';
+    std::cout << "INFO: \n";
+    std::cout << "size: " << info.size << '\n';
+    std::cout << "width: " << info.width << '\n';
+    std::cout << "height: " << info.height << '\n';
+    std::cout << "planes: " << info.planes << '\n';
+    std::cout << "bitcount: " << info.bitcount << '\n';
+    std::cout << "compression: " << info.compression << '\n';
+    std::cout << "imageSize: " << info.imageSize << '\n';
+
+    os.put('B').put('M');
+    writeValue(os, header);
+    writeValue(os, info);
+
+    os.seekp(header.dataOffset);
+
+    auto loopRaster = [&](Inserter& insert)
+    {
+        auto [width, height] = img.dimensions();
+        for (Index i : std::views::iota(Index{0}, height) | std::views::reverse)
+            for (Index j : std::views::iota(Index{0}, width))
+                insert(img(i, j), j);
+    };
+
+    //TODO: Not aligned resolutions
+    auto bitsPerElem = info.bitcount / 3;
+    if (bitsPerElem < 8)
+    {
+        DirectInserter<uint8_t> inserter {os, info.bitcount, img};
+        return loopRaster(inserter);
+    }
+    else if (bitsPerElem == 8)
+    {
+        std::cout << "Using FixedInserter<8bits>\n";
+        FixedInserter<uint8_t> inserter {os, img};
+        return loopRaster(inserter);
+    }
+    else if (bitsPerElem < 16)
+    {
+        DirectInserter<uint16_t> inserter {os, info.bitcount, img};
+        return loopRaster(inserter);
+    }
+    else if (bitsPerElem == 16)
+    {
+        FixedInserter<uint16_t> inserter {os, img};
+        return loopRaster(inserter);
+    }
+    else if (bitsPerElem < 32)
+    {
+        DirectInserter<uint32_t> inserter {os, info.bitcount, img};
+        return loopRaster(inserter);
+    }
+    else if (bitsPerElem == 32)
+    {
+        FixedInserter<uint32_t> inserter {os, img};
+        return loopRaster(inserter);
+    }
 }

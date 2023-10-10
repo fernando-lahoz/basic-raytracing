@@ -46,7 +46,7 @@ public:
     /**
      * @brief Size in pixels of this image. Equivalent to `width * height`.
      * 
-     * @return Number of pixels in this image
+     * @return Number of pixels in this image.
      */
     Index pixels() const;
 
@@ -55,6 +55,9 @@ public:
      */
     Dimensions dimensions() const;
 
+    /**
+     * @return Max value of luminance inside this image.
+     */
     Real luminance() const;
 
     Natural resolution() const;

@@ -150,6 +150,8 @@ int main(int argc, char* argv[])
 
     img.toneMap(*toneMaping);
     img.changeResolution(255);
+    //img.changeResolution((1 << 16) - 1);
+    //img.changeResolution((Integer{1} << 32) - 1);
     writer->write(img);
 
     return 0;
