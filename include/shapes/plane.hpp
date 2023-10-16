@@ -9,7 +9,7 @@ protected:
     Real k; // Distance to origin
 public:
     Plane(Point reference, Direction normal, Emission color)
-        : Shape{color}, n{normalize(normal)}, k{-dot(reference, normal)} {}
+        : Shape{color}, n{normalize(normal)}, k{dot(reference, normal)} {}
 
     virtual Real intersect(Ray ray) const override;
 

@@ -18,8 +18,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
 
 include_directories(include src test)
 
+set(Executable path_tracer)
 #set(Executable tone_mapper)
-set(Executable test_intersections)
+#set(Executable test_intersections)
 #set(Executable test_base_inverse_identity)
 
 set(SubProjects
@@ -28,13 +29,14 @@ set(SubProjects
 
 set(Libraries
     # AÑADIR AQUÍ LAS BIBLIOTECAS
-    geometry
     tone_mapping
     image
     color_spaces #después de image, sino da problemas del linker
     format/ppm
     format/bmp
     shapes
+    raytracing
+    geometry
 )
 
 foreach(Project IN LISTS SubProjects)

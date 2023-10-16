@@ -59,13 +59,13 @@ Real Polygon<N, Cl>::intersect(Ray ray) const
             // dedicated functions not used due to exceptions overhead
             blacklist[v] = true; 
             blacklist[(v + N - 1) % N] = true;
-            blacklist[(v + N - 2) % N] = true;
+            //blacklist[(v + N - 2) % N] = true;
         }
         else if (!checkSegment(v + 1))
         {
             blacklist[(v + 1) % N] = true; 
             blacklist[v] = true;
-            blacklist[(v + N - 1) % N] = true;
+            //blacklist[(v + N - 1) % N] = true;
         }
         else if (isInside(v + 2, v))
         {
@@ -74,5 +74,5 @@ Real Polygon<N, Cl>::intersect(Ray ray) const
     }
 
     auto final = whitelist &~ blacklist; //whitelist - blacklist
-    return final.any();
+    return final.any() ? t : Ray::nohit;
 }

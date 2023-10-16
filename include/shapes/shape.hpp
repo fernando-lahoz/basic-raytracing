@@ -1,6 +1,5 @@
 #pragma once
 
-#include "geometry.hpp"
 #include "color_spaces.hpp"
 #include "raytracing.hpp"
 
