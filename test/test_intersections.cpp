@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "shapes.hpp"
+#include "raytracing.hpp"
 
 void testIntersection(const Shape& object, Ray ray)
 {
@@ -19,6 +20,8 @@ void testIntersection(const Shape& object, Ray ray)
 
 int main()
 {
+
+
     {
         Ray ray {.p = {0, 0, 0}, .d = normalize({1, 0, 0})};
 
