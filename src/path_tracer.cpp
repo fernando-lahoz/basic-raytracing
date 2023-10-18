@@ -10,8 +10,8 @@ int main()
     const auto& camera = cornell_box_1::camera;
     const auto& objects = cornell_box_1::objects;
 
-    Image img {1, 255, Dimensions{300, 300}};
-    camera.render(img, objects);
+    Image img {1, 255, Dimensions{380, 729}};
+    camera.pathtrace(img, objects, 10);
 
     auto writer = makeImageWriter("ornell_box_1.bmp", "bmp");
     if (writer == nullptr)

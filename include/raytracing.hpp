@@ -8,6 +8,8 @@
 
 class Shape;
 
+using ObjectSet = std::vector<std::reference_wrapper<const Shape>>;
+
 struct Ray
 {
     Point p;
@@ -26,7 +28,7 @@ private:
 public:
     Camera(Point pinhole, Direction front, Direction up);
 
-    void render(Image& img, const std::vector<std::reference_wrapper<const Shape>>&  objects) const;
+    void pathtrace(Image& img, const ObjectSet& objects, Index ppp) const;
 
     friend std::ostream& operator<<(std::ostream& os, const Camera& cam);
 };

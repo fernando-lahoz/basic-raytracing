@@ -20,15 +20,15 @@ Plane wall_right {Point{0, 0, 3}, Direction{0, 0, -1}, Emission{1, 0, 1}};
 Plane wall_roof {Point{0, 3, 0}, Direction{0, -1, 0}, Emission{0, 1, 0}};
 Plane wall_floor {Point{0, -3, 0}, Direction{0, 1, 0}, Emission{0, 0, 1}};
 
-PlainPoint arrow_points[4] {{0, 0}, {1, -1}, {0, -2}, {-1, 1}};
-Polygon<4> arrow {arrow_points, Direction{-1, 0, 0}, Point{4, 1, -1}, Point{4, 1, 0}, Emission{0.2, 0.2, 0.2}};
+// PlainPoint arrow_points[4] {{0, 0}, {1, -1}, {0, -2}, {-1, 1}};
+// Polygon<4> arrow {arrow_points, Direction{-1, 0, 0}, Point{4, 1, -1}, Point{4, 1, 0}, Emission{0.2, 0.2, 0.2}};
 
-std::vector<std::reference_wrapper<const Shape>> objects
+ObjectSet objects
 {
     ball_1, ball_2, ball_3,
     wall_background, wall_roof, wall_floor,
     wall_left, wall_right,
-    arrow
+    // arrow
 };
 
 class Init

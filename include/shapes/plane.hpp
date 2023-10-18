@@ -6,10 +6,10 @@ class Plane : public Shape
 {
 protected:
     Direction n;
-    Real k; // Distance to origin
+    Point o; 
 public:
     Plane(Point reference, Direction normal, Emission color)
-        : Shape{color}, n{normalize(normal)}, k{dot(reference, normal)} {}
+        : Shape{color}, n{normalize(normal)}, o{reference} {}
 
     virtual Real intersect(Ray ray) const override;
 
