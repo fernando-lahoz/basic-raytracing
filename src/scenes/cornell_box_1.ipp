@@ -4,6 +4,7 @@
 #include "raytracing.hpp"
 
 #include <iostream>
+#include <array>
 
 namespace cornell_box_1
 {
@@ -20,15 +21,15 @@ Plane wall_right {Point{0, 0, 3}, Direction{0, 0, -1}, Emission{1, 0, 1}};
 Plane wall_roof {Point{0, 3, 0}, Direction{0, -1, 0}, Emission{0, 1, 0}};
 Plane wall_floor {Point{0, -3, 0}, Direction{0, 1, 0}, Emission{0, 0, 1}};
 
-// PlainPoint arrow_points[4] {{0, 0}, {1, -1}, {0, -2}, {-1, 1}};
-// Polygon<4> arrow {arrow_points, Direction{-1, 0, 0}, Point{4, 1, -1}, Point{4, 1, 0}, Emission{0.2, 0.2, 0.2}};
+std::array<PlainPoint, 10> F_points {{{0, 1}, {2, 1}, {2, 0.4}, {0.6, 0.4}, {0.6, 0}, {1, 0}, {1, -0.4}, {0.6, -0.4}, {0.6, -1}, {0, -1}}};
+Polygon<10, Closure::clockwise> F {F_points, Direction{-1, 0, 0}, Point{4, 0, -1}, Point{4, 0, 1}, Emission{0.2, 0.2, 0.2}};
 
 ObjectSet objects
 {
     ball_1, ball_2, ball_3,
     wall_background, wall_roof, wall_floor,
     wall_left, wall_right,
-    // arrow
+    F
 };
 
 class Init

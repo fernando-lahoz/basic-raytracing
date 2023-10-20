@@ -4,6 +4,7 @@
 #include "shapes/plane.hpp"
 
 #include <bitset>
+#include <array>
 
 struct PlainPoint { Real x, y; };
 
@@ -18,10 +19,10 @@ class Polygon : public Plane
 {
     static_assert(N >= 3, "Polygons must have more than 3 vertices.");
 private:
-    Point vertices[N];
+    std::array<Point, N> vertices;
 
 public:
-    Polygon(const PlainPoint plain[N], Direction normal,
+    Polygon(const std::array<PlainPoint, N>& plain, Direction normal,
             Point origin, Point reference, Emission color);
 
     virtual Real intersect(Ray ray) const override;
