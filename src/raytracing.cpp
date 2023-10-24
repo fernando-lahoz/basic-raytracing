@@ -37,20 +37,21 @@ void Camera::pathtrace(Image& img, const ObjectSet& objects, Index ppp) const
         Real xmin = 1;
         for (Index j : std::views::iota(Index{0}, width))
         {
-            auto trace = [&](Ray ray, ObjectSet objects) -> Emission
+            Point hit;
+            Direction normal;
+
+            auto trace = [&](const Ray& ray, const ObjectSet& objects) -> Emission
             {
                 Real minT = Ray::nohit;
                 const Shape* hitObj = nullptr;
                 for (const Shape& obj : objects)
                 {
-                    Real t = obj.intersect(ray);
-                    if (t == Ray::nohit)
-                        continue;
-                    if (minT == Ray::nohit || t < minT)
+                    const auto its = obj.intersect(ray, minT, hit, normal);
+                    if (its != Ray::nohit)
                     {
-                        minT = t;
+                        minT = numbers::min(minT, its);
                         hitObj = &obj;
-                    }
+                    } 
                 }
 
                 return (hitObj != nullptr) ? hitObj->color() : Emission{0, 0, 0};

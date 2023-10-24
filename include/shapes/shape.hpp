@@ -12,9 +12,7 @@ protected:
 
     Shape (Emission color) : emission{color} {}
 public:
-    virtual Real intersect(Ray ray) const = 0;
-
-    virtual Direction normal(Point p) const = 0;
+    virtual Real intersect(const Ray& ray, Real minT, Point& hit, Direction& normal) const = 0;
 
     inline Emission color() const { return emission; };
 };

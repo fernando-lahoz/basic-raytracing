@@ -3,7 +3,7 @@
 #include "shapes.hpp"
 #include "raytracing.hpp"
 
-void testIntersection(const Shape& object, Ray ray)
+void testReal(const Shape& object, Ray ray)
 {
     auto t = object.intersect(ray);
     if (t != Ray::nohit)
@@ -28,7 +28,7 @@ int main()
 
         std::cout << "Ray{.origin = " << ray.p << ", .direction = " << ray.d << "}\n";
         std::cout << "Sphere{.radius = " << radius << ", .center = " << center << "}\n";
-        testIntersection(Sphere{center, radius, {255, 0, 255}}, ray);
+        testReal(Sphere{center, radius, {255, 0, 255}}, ray);
         std::cout << std::endl;
     }
     
@@ -42,7 +42,7 @@ int main()
 
         std::cout << "Ray{.origin = " << ray.p << ", .direction = " << ray.d << "}\n";
         std::cout << "Plane{.normal = " << normal << ", .reference = " << reference << "}\n";
-        testIntersection(Plane{reference, normal, {255, 0, 255}}, ray);
+        testReal(Plane{reference, normal, {255, 0, 255}}, ray);
         std::cout << std::endl;
     }
     
@@ -57,7 +57,7 @@ int main()
 
         std::cout << "Ray{.origin = " << ray.p << ", .direction = " << ray.d << "}\n";
         std::cout << "Disk{.normal = " << normal << ", .radius = " << radius << ", .center = " << center << "}\n";
-        testIntersection(Disk(normal, center, radius, {255, 0, 255}), ray);
+        testReal(Disk(normal, center, radius, {255, 0, 255}), ray);
         std::cout << std::endl;
     }
 
@@ -66,7 +66,7 @@ int main()
         // NOT TESTED
         const PlainPoint points[3] = {{0,0}, {0,0}, {0,0}};
         Polygon<3> triangle {points, {1, 1, 1}, {1, 0, 0}, {1, 1, 0}, {0, 0, 0}};
-        testIntersection(triangle, ray);
+        testReal(triangle, ray);
         std::cout << std::endl;
     }
 }

@@ -13,7 +13,7 @@ int main()
     Image img {1, 255, Dimensions{500, 500}};
     camera.pathtrace(img, objects, 10);
 
-    auto writer = makeImageWriter("ornell_box_1.bmp", "bmp");
+    auto writer = makeImageWriter("cornell_box_1.bmp", "bmp");
     if (writer == nullptr)
         std::cout << "Could not open destination file or format not available." << std::endl;
 

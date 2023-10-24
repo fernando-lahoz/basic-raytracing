@@ -2,14 +2,22 @@
 
 #include "shapes/plane.hpp"
 
-class Disk : public Plane
+class DiskBorder
 {
-protected:
+protected:  
     Real r;
-    Point o;
+public:
+    DiskBorder (Real radius) : r{radius} {}
+    inline bool isInside(const Point p, const LimitedPlane<DiskBorder>& plane) const;
+};
+
+CHECK_BORDER_CONCEPT(DiskBorder)
+
+class Disk : public LimitedPlane<DiskBorder>
+{
 public:
     Disk(Direction normal, Point center, Real radius, Emission color)
-        : Plane{center, normal, color}, r{radius}, o{center} {}
-
-    virtual Real intersect(Ray ray) const override;
+        : LimitedPlane{center, normal, DiskBorder{radius}, color} {}
 };
+
+#include "shapes/disk.ipp"

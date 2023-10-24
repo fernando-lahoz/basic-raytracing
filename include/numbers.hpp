@@ -3,6 +3,7 @@
 #include <cfloat>
 #include <sstream>
 #include <iomanip>
+#include <limits>
 
 using Real = float;
 using Natural = unsigned long long;
@@ -29,5 +30,7 @@ auto min(Ty n, Args ...args) {
     auto m = min(args...);
     return n < m ? n : m;
 }
+
+constexpr Real infinity = std::numeric_limits<Real>::infinity();
 
 } //namespace numbers

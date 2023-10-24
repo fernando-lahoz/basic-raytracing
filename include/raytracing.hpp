@@ -15,9 +15,9 @@ struct Ray
     Point p;
     Direction d; // must be normalized
 
-    static inline constexpr Real nohit = -1;
+    constexpr static inline Real nohit = {2e32};
 
-    inline Point hitPoint(Real t) { return p + d * t; }
+    inline Point hitPoint(Real t) const { return p + (d * t); }
 };
 
 class Camera

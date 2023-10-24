@@ -11,9 +11,7 @@ public:
     Sphere(Point center, Real radius, Emission color)
         : Shape{color}, c{center}, r{radius} {}
 
-    virtual Real intersect(Ray ray) const override;
-
-    virtual Direction normal(Point p) const override;
+    virtual Real intersect(const Ray& ray, Real minT, Point& hit, Direction& normal) const override;
 
     friend std::ostream& operator<<(std::ostream& os, const Sphere& sphere);
 };
