@@ -5,253 +5,154 @@
 #include <vector>
 #include <ranges>
 #include <cstdint>
+#include <bit>
+#include <istream>
+#include <ostream>
 
-#include <iostream>
+template <Index Bytes>
+struct Word_impl {};
 
-using _1byte = uint8_t;
-using _2byte = uint16_t;
-using _4byte = uint32_t;
+template <> struct Word_impl<1> { using type = uint8_t; };
+template <> struct Word_impl<2> { using type = uint16_t; };
+template <> struct Word_impl<4> { using type = uint32_t; };
 
-struct __attribute__ ((packed)) Header
-{
-    static constexpr _2byte signature = 0x4D42; //BM
-    _4byte fileSize;
-    _Float32 maxLuminance; // normally unused
-    _4byte dataOffset;
-};
+template <Index Bytes>
+using Word = typename Word_impl<Bytes>::type;
 
-struct __attribute__ ((packed)) InfoHeader
-{
-    _4byte size;
-    _4byte width;
-    _4byte height;
-    _2byte planes;
-    _2byte bitcount;
-    _4byte compression;
-    _4byte imageSize; //compressed size; 0 if compression == 0
-    _4byte unused[4];
-};
+static_assert(sizeof(float) == 4, "require 32-bit floats");
 
-struct __attribute__ ((packed)) ColorTableEntry
-{
-    _1byte red;
-    _1byte green;
-    _1byte blue;
-    _1byte unused;
-};
-
-using ColorTable = std::vector<ColorTableEntry>;
+template <typename Ty, typename BTy>
+Ty narrow(BTy x) { return static_cast<Ty>(x); }
 
 template <typename Ty>
-void readValue(std::istream& is, Ty& value)
+void readValue(std::istream& is, Ty& payload)
 {
-    is.read(reinterpret_cast<char*>(&value), sizeof(Ty));
+    static constexpr Index size = sizeof(Ty);
+    Word<1> buffer[size] {};
+    Word<size> bits = 0;
+    if (is.read(reinterpret_cast<char*>(buffer), size))
+    {
+        for (Index i = 0; i < size; i++)
+            bits |= buffer[i] << (8 * i);
+        payload = std::bit_cast<Ty>(bits);
+    }
 }
 
-template <typename WordT>
-inline bool extractColor(std::istream& is, WordT& word, WordT& color,
-        Natural bitcount, Natural& extracted)
+template <typename Ty>
+void writeValue(std::ostream& os, const Ty& payload)
 {
-    //Extracts and shifts n bits form byte
-    auto getbits = [](WordT& byte, Natural n) -> WordT
+    static constexpr Index size = sizeof(Ty);
+    Word<1> buffer[size];
+    Word<size> bits = std::bit_cast<Word<size>, Ty>(payload);
+    for (Index i = 0; i < size; i++)
+        buffer[i] = narrow<Word<1>>(bits >> (8 * i));
+    os.write(reinterpret_cast<char*>(buffer), size);
+}
+
+struct Header
+{
+    static constexpr Word<2> signature = 0x4D42; //BM
+    Word<4> fileSize;
+    float maxLuminance; // normally unused
+    Word<4> dataOffset;
+
+    void read(std::istream& is)
     {
-        WordT res = byte & ((1 << n) - 1);
-        byte = byte >> n;
-        return res;
-    };
+        readValue(is, fileSize);
+        readValue(is, maxLuminance);
+        readValue(is, dataOffset);
+    }
+    
+    void write(std::ostream& os)
+    {
+        writeValue(os, fileSize);
+        writeValue(os, maxLuminance);
+        writeValue(os, dataOffset);
+    }
+};
+
+struct InfoHeader
+{
+    Word<4> size, width, height;
+    Word<2> planes, bitcount;
+    Word<4> compression, imageSize; //compressed size; 0 if compression == 0
+    Word<4> unused[4];
+
+    void read(std::istream& is)
+    {
+        readValue(is, size); readValue(is, width);
+        readValue(is, height); readValue(is, planes);
+        readValue(is, bitcount); readValue(is, compression);
+        readValue(is, imageSize);
+        for (auto i = 0; i < 4; i++)
+            readValue(is, unused[i]);
+    }
+
+    void write(std::ostream& os)
+    {
+        writeValue(os, size); writeValue(os, width);
+        writeValue(os, height); writeValue(os, planes);
+        writeValue(os, bitcount); writeValue(os, compression);
+        writeValue(os, imageSize);
+        for (auto i = 0; i < 4; i++)
+            writeValue(os, unused[i]);
+    }
+};
+
+struct ColorTableEntry
+{
+    Word<1> red, green, blue, unused;
+
+    void read(std::istream& is)
+    {
+        readValue(is, red); readValue(is, green);
+        readValue(is, blue); readValue(is, unused);
+    }
+};
+
+//using ColorTable = std::vector<ColorTableEntry>;
+
+template <typename WordT>
+bool extractPixel(std::istream& is, const Image& img, RGBPixel& pixel, Index j)
+{
+    auto inputValue = [&](Natural s) -> Real
+        { return (s * img.luminance()) / img.resolution(); };
 
     static constexpr Natural wordsize = sizeof(WordT) * 8;
 
-    Natural remaining = bitcount;
+    static Natural recordedBits = 0; // State machine per row
 
-    auto step = [&]()
+    WordT red = 0, green = 0, blue = 0;
+    readValue(is, blue); if (!is) return false;
+    readValue(is, green); if (!is) return false;
+    readValue(is, red); if (!is) return false;
+
+    pixel.r = inputValue(red);
+    pixel.g = inputValue(green);
+    pixel.b = inputValue(blue);
+
+    recordedBits += 3 * wordsize;
+    if (j + 1 == img.dimensions().width)
     {
-        if (extracted == 0)
-        {
-            readValue(is, word);
-            if (!is) return false;
-        }
-
-        Natural bits = numbers::min(remaining, wordsize - extracted);
-        color = getbits(word, bits);
-
-        remaining = remaining - bits;
-        extracted = (extracted + bits) % wordsize;
-
-        return true;
-    };
-
-    return step() && (remaining == 0 || step());
+        Natural paddingBytes = (4 - (recordedBits % 32) / 8) % 4;
+        is.seekg(paddingBytes, std::istream::cur);
+        recordedBits = 0;
+    }
+    
+    return true;
 }
-
-struct Extractor
-{
-    virtual bool operator()(RGBPixel& pixel, Index j) = 0;
-};
-
-// State machine per row
-template <typename WordT>
-struct DirectExtractor : Extractor
-{
-    std::istream& is;
-    const Natural bitcount;
-    const Image& img;
-
-    DirectExtractor(std::istream& is_, Natural bc_, const Image& img_)
-        : is{is_}, bitcount{bc_}, img{img_}
-    {}
-
-    virtual bool operator()(RGBPixel& pixel, Index j) override
-    {
-        auto inputValue = [&](Natural s) -> Real
-            { return s * (img.luminance() / img.resolution()); };
-        
-        static Natural extracted = 0;
-        static WordT word = 0;
-        static Natural recordedBits = 0;
-
-        WordT red, green, blue;
-        if (!extractColor(is, word, blue, bitcount / 3, extracted)) return false;
-        if (!extractColor(is, word, green, bitcount / 3, extracted)) return false;
-        if (!extractColor(is, word, red, bitcount / 3, extracted)) return false;
-
-        pixel.r = inputValue(red);
-        pixel.g = inputValue(green);
-        pixel.b = inputValue(blue);
-
-        recordedBits += bitcount;
-        auto dim = img.dimensions();
-        if (j + 1 == dim.width)
-        {
-            Natural paddingBytes = (recordedBits % 32) / 8;
-            is.seekg(paddingBytes, std::istream::cur);
-            recordedBits = 0; extracted = 0;
-        }
-        
-        return true;
-    }
-};
-
-struct IndirectExtractor : Extractor
-{
-    using WordT = _1byte;
-
-    std::istream& is;
-    const Natural bitcount;
-    const Image& img;
-    const ColorTable& colorTable;
-
-    IndirectExtractor(std::istream& is_, Natural bc_,
-            const Image& img_, const ColorTable& ct_)
-        : is{is_}, bitcount{bc_}, img{img_}, colorTable{ct_}
-    {}
-
-    virtual bool operator()(RGBPixel& pixel, Index j) override
-    {
-        auto inputValue = [&](Natural s) -> Real
-            { return s * (img.luminance() / img.resolution()); };
-
-        static Natural extracted = 0;
-        static WordT word = 0;
-        static Natural recordedBits = 0;
-
-        WordT index;
-        if (!extractColor(is, word, index, bitcount, extracted)) return false;
-
-        auto entry = colorTable[index];
-
-        pixel.r = inputValue(entry.red);
-        pixel.g = inputValue(entry.green);
-        pixel.b = inputValue(entry.blue);
-
-        recordedBits += bitcount;
-        auto dim = img.dimensions();
-        if (j + 1 == dim.width)
-        {
-            Natural paddingBytes = (recordedBits % 32) / 8;
-            is.seekg(paddingBytes, std::istream::cur);
-            recordedBits = 0; extracted = 0;
-        }
-        
-        return true;
-    }
-};
-
-template <typename WordT>
-struct FixedExtractor : Extractor
-{
-    std::istream& is;
-    const Image& img;
-
-    FixedExtractor(std::istream& is_, const Image& img_)
-        : is{is_}, img{img_}
-    {}
-
-    virtual bool operator()(RGBPixel& pixel, Index j) override
-    {
-        auto inputValue = [&](Natural s) -> Real
-            { return (s * img.luminance()) / img.resolution(); };
-
-        static constexpr Natural wordsize = sizeof(WordT) * 8;
-
-        static Natural recordedBits = 0;
-
-        WordT red, green, blue;
-        readValue(is, blue); if (!is) return false;
-        readValue(is, green); if (!is) return false;
-        readValue(is, red); if (!is) return false;
-
-        // std::cout << "{" << (Natural)red << ", " << (Natural)green << ", " << (Natural)blue << "}\t\t";
-
-        pixel.r = inputValue(red);
-        pixel.g = inputValue(green);
-        pixel.b = inputValue(blue);
-
-        // std::cout << "luminance: " << img.luminance() << "\t\t";
-        // std::cout << "{" << pixel.r << ", " << pixel.g << ", " << pixel.b << "}\n";
-
-        recordedBits += 3 * wordsize;
-        if (j + 1 == img.dimensions().width)
-        {
-            Natural paddingBytes = (4 - (recordedBits % 32) / 8) % 4;
-            is.seekg(paddingBytes, std::istream::cur);
-            // std::cout << "RecordedBits: " << recordedBits << "\n";
-            // std::cout << "Padding: " << paddingBytes << "\n";
-            recordedBits = 0;
-        }
-        
-        return true;
-    }
-};
 
 bool bmp::read(std::istream& is, Image& img)
 {
-    Header header;
-    InfoHeader info;
-    ColorTable colorTable;
+    Header header {};
+    InfoHeader info {};
+    //ColorTable colorTable;
 
-    readValue(is, header);
-    readValue(is, info);
+    header.read(is); 
+    info.read(is);
 
-    std::cout << "sizeof(Header): " << sizeof(Header) << '\n';
-    std::cout << "sizeof(InfoHeader): " << sizeof(InfoHeader) << '\n';
-    std::cout << "sizeof(ColorTableEntry): " << sizeof(ColorTableEntry) << '\n';
-    std::cout << '\n';
-    std::cout << "HEADER: \n";
-    std::cout << "fileSize: " << header.fileSize << '\n';
-    std::cout << "maxLuminance: " << header.maxLuminance << '\n';
-    std::cout << "dataOffset: " << header.dataOffset << '\n';
-    std::cout << '\n';
-    std::cout << "INFO: \n";
-    std::cout << "size: " << info.size << '\n';
-    std::cout << "width: " << info.width << '\n';
-    std::cout << "height: " << info.height << '\n';
-    std::cout << "planes: " << info.planes << '\n';
-    std::cout << "bitcount: " << info.bitcount << '\n';
-    std::cout << "compression: " << info.compression << '\n';
-    std::cout << "imageSize: " << info.imageSize << '\n';
-
-    if (info.bitcount % 3 != 0)
+    // In this project only 24 bit RGB (and custom extension for HDR) is accepted
+    if (info.bitcount != 24 && info.bitcount != 48 && info.bitcount != 96)
         return false;
 
     auto bitsPerElem = info.bitcount <= 8 ? info.bitcount : info.bitcount / 3;
@@ -263,271 +164,109 @@ bool bmp::read(std::istream& is, Image& img)
     if (info.compression != 0)
         return false;
 
-    auto loopRaster = [&](Extractor& extract)
-    {
-        auto [width, height] = img.dimensions();
-        for (Index i : std::views::iota(Index{0}, height) | std::views::reverse)
-        {
-            for (Index j : std::views::iota(Index{0}, width))
-            {
-                RGBPixel pixel;
-                if (!extract(pixel, j))
-                    return false;
-                img(i, j) = pixel;
-            }
-        }
-               
-        return true;
-    };
-  
-    if (info.bitcount <= 8)
-    {
-        for (Index i = 0; i < img.resolution(); i++)
-        {
-            if (header.dataOffset - is.tellg() < 4)
-                return false;
-
-            ColorTableEntry entry;
-            readValue(is, entry);
-            colorTable.push_back(entry);
-        }
-        is.seekg(header.dataOffset);
-        
-        IndirectExtractor extractor {is, info.bitcount, img, colorTable};
-        return loopRaster(extractor);
-    }
-
     is.seekg(header.dataOffset);
 
-    std::cout << '\n';
-    std::cout << "Cuurrent position: " << is.tellg() << '\n';
+    auto extractFunction = &extractPixel<Word<1>>;
+    if (bitsPerElem == 16) extractFunction = &extractPixel<Word<2>>;
+    else if (bitsPerElem == 32) extractFunction = &extractPixel<Word<4>>;
 
-    if (bitsPerElem < 8)
+    auto [width, height] = img.dimensions();
+    for (Index i : std::views::iota(Index{0}, height) | std::views::reverse)
     {
-        DirectExtractor<uint8_t> extractor {is, info.bitcount, img};
-        return loopRaster(extractor);
-    }
-    else if (bitsPerElem == 8)
-    {
-        std::cout << "Using FixedExtractor<8bits>\n";
-        FixedExtractor<uint8_t> extractor {is, img};
-        return loopRaster(extractor);
-    }
-    else if (bitsPerElem < 16)
-    {
-        DirectExtractor<uint16_t> extractor {is, info.bitcount, img};
-        return loopRaster(extractor);
-    }
-    else if (bitsPerElem == 16)
-    {
-        FixedExtractor<uint16_t> extractor {is, img};
-        return loopRaster(extractor);
-    }
-    else if (bitsPerElem < 32)
-    {
-        DirectExtractor<uint32_t> extractor {is, info.bitcount, img};
-        return loopRaster(extractor);
-    }
-    else if (bitsPerElem == 32)
-    {
-        FixedExtractor<uint32_t> extractor {is, img};
-        return loopRaster(extractor);
-    }
-    return false;
-}
-
-template <typename Ty>
-void writeValue(std::ostream& os, Ty& value)
-{
-    os.write(reinterpret_cast<char*>(&value), sizeof(Ty));
-}
-
-template <typename Ty, typename BTy>
-Ty narrow(BTy x) { return static_cast<Ty>(x); }
-
-struct Inserter
-{
-    virtual void operator()(RGBPixel pixel, Index j) = 0;
-};
-
-// State machine per row
-template <typename WordT>
-struct DirectInserter : Inserter
-{
-    std::ostream& os;
-    const Natural bitcount;
-    const Image& img;
-
-    DirectInserter(std::ostream& os_, Natural bc_, const Image& img_)
-        : os{os_}, bitcount{bc_}, img{img_}
-    {}
-
-    virtual void operator()(RGBPixel pixel, Index j) override
-    {
-    }
-};
-
-struct IndirectInserter : Inserter
-{
-    using WordT = _1byte;
-
-    std::ostream& os;
-    const Natural bitcount;
-    const Image& img;
-    const ColorTable& colorTable;
-
-    IndirectInserter(std::ostream& os_, Natural bc_,
-            const Image& img_, const ColorTable& ct_)
-        : os{os_}, bitcount{bc_}, img{img_}, colorTable{ct_}
-    {}
-
-    virtual void operator()(RGBPixel pixel, Index j) override
-    {}
-};
-
-template <typename WordT>
-struct FixedInserter : Inserter
-{
-    std::ostream& os;
-    const Image& img;
-
-    FixedInserter(std::ostream& os_, const Image& img_)
-        : os{os_}, img{img_}
-    {}
-
-    virtual void operator()(RGBPixel pixel, Index j) override
-    {
-        auto outputValue = [&](Real v) -> Natural
+        for (Index j : std::views::iota(Index{0}, width))
         {
-            Natural val = std::round(v * (img.resolution() / img.luminance()));
-            return numbers::min(val, img.resolution());
-        };
-
-        static constexpr Natural wordsize = sizeof(WordT) * 8;
-
-        static Natural recordedBits = 0;
-
-        WordT blue = outputValue(pixel.b);
-        WordT green = outputValue(pixel.g);
-        WordT red = outputValue(pixel.r);
-
-        writeValue(os, blue);
-        writeValue(os, green);
-        writeValue(os, red);
-
-        recordedBits += 3 * wordsize;
-        if (j + 1 == img.dimensions().width)
-        {
-            Natural paddingBytes = (4 - (recordedBits % 32) / 8) % 4;
-            _1byte padding[3] {0, 0, 0};
-            os.write(reinterpret_cast<char*>(padding), paddingBytes);
-            // std::cout << "RecordedBits: " << recordedBits << "\n";
-            // std::cout << "Padding: " << paddingBytes << "\n";
-            recordedBits = 0;
+            RGBPixel pixel;
+            if (!extractFunction(is, img, pixel, j))
+                return false;
+            img(i, j) = pixel;
         }
     }
-};
+            
+    return true;
+}
 
+template <typename WordT>
+void insertPixel(std::ostream& os, const Image& img, const RGBPixel& pixel, Index j)
+{
+    auto outputValue = [&](Real v) -> Natural
+    {
+        Natural val = std::round(v * (img.resolution() / img.luminance()));
+        return numbers::min(val, img.resolution());
+    };
 
-//Does not implement color table (bitsPerPixel <= 8) nor compression
-void bmp::write(std::ostream& os, const Image& img)
+    static constexpr Natural wordsize = sizeof(WordT) * 8;
+
+    static Natural recordedBits = 0;
+
+    WordT blue = outputValue(pixel.b);
+    WordT green = outputValue(pixel.g);
+    WordT red = outputValue(pixel.r);
+
+    writeValue(os, blue);
+    writeValue(os, green);
+    writeValue(os, red);
+
+    recordedBits += 3 * wordsize;
+    if (j + 1 == img.dimensions().width)
+    {
+        Natural paddingBytes = (4 - (recordedBits % 32) / 8) % 4;
+        Word<1> padding[3] {0, 0, 0};
+        os.write(reinterpret_cast<char*>(padding), paddingBytes);
+        recordedBits = 0;
+    }
+}
+
+bool bmp::write(std::ostream& os, const Image& img)
 {
     auto [width, height] = img.dimensions();
 
     auto msb = [](Natural x) { Natural r{}; while (x >>= 1) r++; return r; };
 
-    Natural bitsPerPixel = (msb(img.resolution()) + 1) * 3;
-    Natural bitsPerRow = width * bitsPerPixel;
-    Natural paddingPerRow = (32 - (bitsPerRow % 32)) % 32;
-    Natural rowSize = (bitsPerRow + paddingPerRow) / 8;
-    Natural colorTableSize = 0; // not going to implement
-    Natural fileSize = 54 + height * rowSize + colorTableSize;
+    if (img.resolution() != std::numeric_limits<Word<1>>::max()
+        && img.resolution() != std::numeric_limits<Word<2>>::max()
+        && img.resolution() != std::numeric_limits<Word<4>>::max())
+        return false;
 
-    std::cout << "bitsPerPixel = " << bitsPerPixel << '\n';
-    std::cout << "bitsPerRow = " << bitsPerRow << '\n';
-    std::cout << "paddingPerRow = " << paddingPerRow << '\n';
-    std::cout << "rowSize = " << rowSize << '\n';
-    std::cout << "colorTableSize = " << colorTableSize << '\n';
-    std::cout << "fileSize = " << fileSize << '\n';
+    const Natural bitsPerPixel = (msb(img.resolution()) + 1) * 3;
+    const Natural bitsPerRow = width * bitsPerPixel;
+    const Natural paddingPerRow = (32 - (bitsPerRow % 32)) % 32;
+    const Natural rowSize = (bitsPerRow + paddingPerRow) / 8;
+    const Natural colorTableSize = 0; // not going to implement
+    const Natural fileSize = 54 + height * rowSize + colorTableSize;
 
     Header header
     {
-        .fileSize = narrow<_4byte>(fileSize),
+        .fileSize = narrow<Word<4>>(fileSize),
         .maxLuminance = narrow<_Float32>(img.luminance()),
-        .dataOffset = narrow<_4byte>(54 + colorTableSize)
+        .dataOffset = narrow<Word<4>>(54 + colorTableSize)
     };
 
     InfoHeader info
     {
         .size = 40,
-        .width = narrow<_4byte>(width),
-        .height = narrow<_4byte>(height),
+        .width = narrow<Word<4>>(width),
+        .height = narrow<Word<4>>(height),
         .planes = 1,
-        .bitcount = narrow<_2byte>(bitsPerPixel),
+        .bitcount = narrow<Word<2>>(bitsPerPixel),
         .compression = 0,
-        .imageSize = narrow<_4byte>(header.fileSize - header.dataOffset),
+        .imageSize = narrow<Word<4>>(header.fileSize - header.dataOffset),
         .unused = {}
     };
 
-    std::cout << "HEADER: \n";
-    std::cout << "fileSize: " << header.fileSize << '\n';
-    std::cout << "maxLuminance: " << header.maxLuminance << '\n';
-    std::cout << "dataOffset: " << header.dataOffset << '\n';
-    std::cout << '\n';
-    std::cout << "INFO: \n";
-    std::cout << "size: " << info.size << '\n';
-    std::cout << "width: " << info.width << '\n';
-    std::cout << "height: " << info.height << '\n';
-    std::cout << "planes: " << info.planes << '\n';
-    std::cout << "bitcount: " << info.bitcount << '\n';
-    std::cout << "compression: " << info.compression << '\n';
-    std::cout << "imageSize: " << info.imageSize << '\n';
-
     os.put('B').put('M');
-    writeValue(os, header);
-    writeValue(os, info);
+    header.write(os);
+    info.write(os);
 
     os.seekp(header.dataOffset);
 
-    auto loopRaster = [&](Inserter& insert)
-    {
-        auto [width, height] = img.dimensions();
-        for (Index i : std::views::iota(Index{0}, height) | std::views::reverse)
-            for (Index j : std::views::iota(Index{0}, width))
-                insert(img(i, j), j);
-    };
+    const auto bitsPerElem = info.bitcount / 3;
+    auto insertFunction = &insertPixel<Word<1>>;
+    if (bitsPerElem == 16) insertFunction = &insertPixel<Word<2>>;
+    else if (bitsPerElem == 32) insertFunction = &insertPixel<Word<4>>;
 
-    //TODO: Not aligned resolutions
-    auto bitsPerElem = info.bitcount / 3;
-    if (bitsPerElem < 8)
-    {
-        DirectInserter<uint8_t> inserter {os, info.bitcount, img};
-        return loopRaster(inserter);
-    }
-    else if (bitsPerElem == 8)
-    {
-        std::cout << "Using FixedInserter<8bits>\n";
-        FixedInserter<uint8_t> inserter {os, img};
-        return loopRaster(inserter);
-    }
-    else if (bitsPerElem < 16)
-    {
-        DirectInserter<uint16_t> inserter {os, info.bitcount, img};
-        return loopRaster(inserter);
-    }
-    else if (bitsPerElem == 16)
-    {
-        FixedInserter<uint16_t> inserter {os, img};
-        return loopRaster(inserter);
-    }
-    else if (bitsPerElem < 32)
-    {
-        DirectInserter<uint32_t> inserter {os, info.bitcount, img};
-        return loopRaster(inserter);
-    }
-    else if (bitsPerElem == 32)
-    {
-        FixedInserter<uint32_t> inserter {os, img};
-        return loopRaster(inserter);
-    }
+    for (Index i : std::views::iota(Index{0}, height) | std::views::reverse)
+        for (Index j : std::views::iota(Index{0}, width))
+            insertFunction(os, img, img(i, j), j);
+
+    return true;
 }

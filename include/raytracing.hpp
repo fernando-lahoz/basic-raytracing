@@ -15,7 +15,7 @@ struct Ray
     Point p;
     Direction d; // must be normalized
 
-    constexpr static inline Real nohit = {2e32};
+    constexpr static inline Real nohit = {numbers::infinity};
 
     inline Point hitPoint(Real t) const { return p + (d * t); }
 };

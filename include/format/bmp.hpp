@@ -9,6 +9,6 @@ namespace bmp {
 
 [[nodiscard]] bool read(std::istream& is, Image& img);
 
-void write(std::ostream& os, const Image& img);
+[[nodiscard]] bool write(std::ostream& os, const Image& img);
 
 } //namespace bmp

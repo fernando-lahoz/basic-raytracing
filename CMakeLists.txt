@@ -1,11 +1,14 @@
 cmake_minimum_required (VERSION 3.0.0)
 project (inf_grafica LANGUAGES CXX)
 
+#------------------------- FLAGS DE COMPILACIÓN --------------------------------
+
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -std=c++20 -save-temps -static-libstdc++")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Ofast -fno-exceptions -march=native")
 
-# Saber si estoy en un sistema de 32 o 64 bits
+#----------------------- ORGANIZACIÓN DE BINARIOS ------------------------------
+
 set(OSBitness 32)
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(OSBitness 64)
@@ -16,28 +19,32 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${FullOutputDir}/static libs")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${FullOutputDir}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
 
+#------------------- DECLARACIÓN DE OBJETOS COMPILABLES ------------------------
+
 include_directories(include src test)
 
-set(Executable path_tracer)
-#set(Executable tone_mapper)
-#set(Executable test_intersections)
-#set(Executable test_base_inverse_identity)
+set(Executables
+    path_tracer
+    tone_mapper
+)
 
 set(SubProjects
-    #... NO DEBERÍA SER NECESARIO
+    # NO USAMOS BIBLIOTECAS EXTERNAS
 )
 
 set(Libraries
-    # AÑADIR AQUÍ LAS BIBLIOTECAS
+    # ¡El orden importa!
     tone_mapping
     image
-    color_spaces #después de image, sino da problemas del linker
+    color_spaces
     format/ppm
     format/bmp
     shapes
     raytracing
     geometry
 )
+
+#------------------------ COMPILACIÓN DE BIBLIOTECAS ---------------------------
 
 foreach(Project IN LISTS SubProjects)
     include_directories(${Project})
@@ -59,25 +66,31 @@ foreach(Lib IN LISTS Libraries)
     add_library(${LibName} STATIC "src/${Lib}.cpp")
 endforeach()
 
-find_file (ExecutablePath "${Executable}.cpp" PATHS src test)
+#------------------------ COMPILACIÓN DE BIBLIOTECAS ---------------------------
 
-# Ejecutable a generar
-add_executable(${Executable} "${ExecutablePath}")
+foreach(Executable IN LISTS Executables)
 
-foreach(Project IN LISTS SubProjects)
-    # Vincular módulos
-    target_link_libraries(${Executable} ${Project}) 
+    string(FIND ${Executable} "/" BarPos REVERSE)
+    if (${BarPos} EQUAL -1)
+        set(ExecutablePath "src/${Executable}.cpp")
+        set(ExecutableName "${Executable}")
+    else()
+        MATH(EXPR BarPos "${BarPos} + 1")
+        string(SUBSTRING ${Executable} ${BarPos} -1 ExecutableName)
+        set(ExecutablePath "${Executable}.cpp")
+    endif()
+
+    # Ejecutable a generar
+    add_executable(${ExecutableName} "${ExecutablePath}")
+
+    foreach(Project IN LISTS SubProjects)
+        # Vincular módulos eternos
+        target_link_libraries(${ExecutableName} ${Project}) 
+    endforeach()
+
+    foreach(Lib IN LISTS LibNames)
+        # Vincular módulos internos
+        target_link_libraries(${ExecutableName} ${Lib}) 
+    endforeach()
+
 endforeach()
-
-foreach(Lib IN LISTS LibNames)
-    # Vincular módulos
-    target_link_libraries(${Executable} ${Lib}) 
-endforeach()
-
-#Inluir path distinto de libstdc++
-#set(LibStdPath libstd_path.txt)
-#if(EXISTS "${CMAKE_SOURCE_DIR}/${LibStdPath}")
-#    file(READ "${CMAKE_SOURCE_DIR}/${LibStdPath}" LIBSTD)
-#    message(STATUS "Using static lib: ${LIBSTD}")
-#    target_link_libraries(${Executable} "${LIBSTD}") 
-#endif()

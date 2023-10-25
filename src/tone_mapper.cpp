@@ -43,7 +43,7 @@ void exit(Ty head, Args&& ...tail)
 static constexpr std::string_view helpStr = R"(
 Usage: ./tone_mapper [OTPION...] INPUT_FILE OUTPUT_FILE
     
-  -s, --strategies=STRING      Use this tone mapping strategy.
+  -s, --strategy=STRING      Use this tone mapping strategy.
                                Equalizes if not specified.
 
       Available strategies:
@@ -150,9 +150,8 @@ int main(int argc, char* argv[])
 
     img.toneMap(*toneMaping);
     img.changeResolution(255);
-    //img.changeResolution((1 << 16) - 1);
-    //img.changeResolution((Integer{1} << 32) - 1);
-    writer->write(img);
+    if (!writer->write(img))
+        program::exit("Could not write destiny file.");
 
     return 0;
 }

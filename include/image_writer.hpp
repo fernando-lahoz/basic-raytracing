@@ -14,7 +14,7 @@ protected:
 
     ImageWriter(std::ofstream&& os_) : os(std::move(os_)) {}
 public:
-    virtual void write(const Image& img) = 0;
+    [[nodiscard]] virtual bool write(const Image& img) = 0;
 };
 
 class PPMWriter : public ImageWriter
@@ -22,7 +22,7 @@ class PPMWriter : public ImageWriter
 public:
     PPMWriter(std::ofstream&& os_) : ImageWriter(std::move(os_)) {}
 
-    virtual void write(const Image& img) override { ppm::write(os, img); }
+    [[nodiscard]] virtual bool write(const Image& img) override { return ppm::write(os, img); }
 };
 
 class BMPWriter : public ImageWriter
@@ -30,7 +30,7 @@ class BMPWriter : public ImageWriter
 public:
     BMPWriter(std::ofstream&& os_) : ImageWriter(std::move(os_)) {}
 
-    virtual void write(const Image& img) override { bmp::write(os, img); }
+    [[nodiscard]] virtual bool write(const Image& img) override { return bmp::write(os, img); }
 };
 
 template <typename IW = ImageWriter>

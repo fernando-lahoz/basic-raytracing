@@ -1,0 +1,30 @@
+Consultas sobre la biblioteca estándar de C++
+https://en.cppreference.com/w/
+
+--PR2---------------------------------------------------------------------------
+
+PPM File Format
+https://netpbm.sourceforge.net/doc/ppm.html
+
+Bitmap File Format (Descripción rápida)
+https://en.wikipedia.org/wiki/BMP_file_format
+
+Bitmap File Format (Detalles de cabeceras y array de píxels)
+https://www.ece.ualberta.ca/~elliott/ee552/studentAppNotes/2003_w/misc/bmp_file_format/bmp_file_format.htm7
+
+    **Algunos formatos no merecen la pena de implementar
+
+--PR3---------------------------------------------------------------------------
+
+Check if Ray intersects Sphere
+https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection.html
+
+    **Detalle propio para prever qué valor escoger
+
+Check if Ray intersects Plane
+https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-plane-and-ray-disk-intersection.html
+
+    **Soluciona el problema de intersectar un plano desde atrás sin mirar el signo de n·d
+
+--PR4---------------------------------------------------------------------------
+

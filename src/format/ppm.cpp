@@ -9,7 +9,7 @@
 template<class Ty>
 concept Readable = requires (char* ptr, Ty& n) { std::from_chars(ptr, ptr, n); };
 
-void ppm::write(std::ostream& os, const Image& img)
+bool ppm::write(std::ostream& os, const Image& img)
 {
     auto outputValue = [&](Real v) -> Natural
     {
@@ -46,6 +46,8 @@ void ppm::write(std::ostream& os, const Image& img)
         }
         os << '\n';
     }
+
+    return bool{os};
 }
 
 //Indulgent version
