@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "shapes.hpp"
-#include "raytracing.hpp"
+#include "ray_tracing.hpp"
 
 void testReal(const Shape& object, Ray ray)
 {

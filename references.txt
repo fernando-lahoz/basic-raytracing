@@ -10,7 +10,7 @@ Bitmap File Format (Descripción rápida)
 https://en.wikipedia.org/wiki/BMP_file_format
 
 Bitmap File Format (Detalles de cabeceras y array de píxels)
-https://www.ece.ualberta.ca/~elliott/ee552/studentAppNotes/2003_w/misc/bmp_file_format/bmp_file_format.htm7
+https://www.ece.ualberta.ca/~elliott/ee552/studentAppNotes/2003_w/misc/bmp_file_format/bmp_file_format.htm
 
     **Algunos formatos no merecen la pena de implementar
 
@@ -28,3 +28,4 @@ https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rend
 
 --PR4---------------------------------------------------------------------------
 
+********* DIFFERENT THREAD SAFE QUEUES IMPLEMENTATION ????????? *******

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "shapes.hpp"
-#include "raytracing.hpp"
+#include "ray_tracing.hpp"
 
 #include <iostream>
 #include <array>
@@ -9,7 +9,12 @@
 namespace cornell_box_1
 {
 
-Camera camera {Point{0, 0, 0}, Direction{2, 0, 0}, Direction{0, 1, 0}};
+namespace cam
+{
+    Point focus {0, 0, 0};
+    Direction front {2, 0, 0};
+    Direction up {0, 1, 0};
+}
 
 Sphere ball_1 {Point{6, 0, 0}, 1, Emission{1, 0, 0}};
 Sphere ball_2 {Point{7, -1.2, 0.8}, 0.9, Emission{0, 1, 1}};

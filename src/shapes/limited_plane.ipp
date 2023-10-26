@@ -11,7 +11,7 @@ Real LimitedPlane<BorderTy>::intersect(const Ray& ray, Real minT, Point& hit, Di
         return Ray::nohit;
 
     const auto t = (dot(n, o - p)) / nd;
-    if (t < 0 || t >= minT)
+    if (t < 0 || Ray::ge(t, minT))
         return Ray::nohit;
 
     const auto hitPoint = ray.hitPoint(t);

@@ -40,4 +40,4 @@ public:
 
 #define CHECK_BORDER_CONCEPT(BorderTy) static_assert(BorderClass<BorderTy, LimitedPlane>);
 
-#include "shapes/plane.ipp"
+#include "shapes/limited_plane.ipp"

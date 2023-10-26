@@ -237,7 +237,7 @@ bool bmp::write(std::ostream& os, const Image& img)
     Header header
     {
         .fileSize = narrow<Word<4>>(fileSize),
-        .maxLuminance = narrow<_Float32>(img.luminance()),
+        .maxLuminance = narrow<float>(img.luminance()),
         .dataOffset = narrow<Word<4>>(54 + colorTableSize)
     };
 

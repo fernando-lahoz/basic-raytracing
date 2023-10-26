@@ -188,19 +188,6 @@ Transformation& Transformation::apply(const Transformation& t)
     return *this;
 }
 
-Point Transformation::operator*(Point p)
-{
-    auto dotP = [&](int i)
-    {
-        Real sum = 0.0;
-        for (auto j : std::views::iota(0, 4))
-            sum += matrix[i][j] * p[j];
-        return sum;
-    };
-
-    return {dotP(0), dotP(1), dotP(2)};
-}
-
 Direction Transformation::operator*(Direction d)
 {
     auto dotP = [&](int i)
@@ -212,6 +199,20 @@ Direction Transformation::operator*(Direction d)
     };
 
     return {dotP(0), dotP(1), dotP(2)};
+}
+
+Point Transformation::operator*(Point p)
+{
+    auto dotP = [&](int i)
+    {
+        Real sum = 0.0;
+        for (auto j : std::views::iota(0, 4))
+            sum += matrix[i][j] * p[j];
+        return sum;
+    };
+
+    auto divider = dotP(3);
+    return {dotP(0) / divider, dotP(1) / divider, dotP(2) / divider};
 }
 
 Transformation::Transformation(Inverse&& inv)

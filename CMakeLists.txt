@@ -29,7 +29,7 @@ set(Executables
 )
 
 set(SubProjects
-    # NO USAMOS BIBLIOTECAS EXTERNAS
+    concurrent_bounded_queue
 )
 
 set(Libraries
@@ -40,17 +40,18 @@ set(Libraries
     format/ppm
     format/bmp
     shapes
-    raytracing
+    ray_tracing
+    path_tracing
     geometry
 )
 
 #------------------------ COMPILACIÓN DE BIBLIOTECAS ---------------------------
 
 foreach(Project IN LISTS SubProjects)
-    include_directories(${Project})
+    include_directories("lib/${Project}/include")
     if(NOT TARGET ${Project})
-        add_subdirectory(${Project})
-    endif()    
+        add_subdirectory("lib/${Project}")
+    endif()
 endforeach()
 
 foreach(Lib IN LISTS Libraries)
@@ -85,12 +86,12 @@ foreach(Executable IN LISTS Executables)
 
     foreach(Project IN LISTS SubProjects)
         # Vincular módulos eternos
-        target_link_libraries(${ExecutableName} ${Project}) 
+        target_link_libraries(${ExecutableName} LINK_PUBLIC ${Project}) 
     endforeach()
 
     foreach(Lib IN LISTS LibNames)
         # Vincular módulos internos
-        target_link_libraries(${ExecutableName} ${Lib}) 
+        target_link_libraries(${ExecutableName} LINK_PUBLIC ${Lib}) 
     endforeach()
 
 endforeach()

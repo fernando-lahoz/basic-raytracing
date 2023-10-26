@@ -1,7 +1,7 @@
 #pragma once
 
 #include "color_spaces.hpp"
-#include "raytracing.hpp"
+#include "ray_tracing.hpp"
 
 struct Emission : RGBTuple {};
 
