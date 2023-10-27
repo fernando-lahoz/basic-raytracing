@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
     const Natural resolution = 255; //8bit/16bit/32bit if bmp
     const Natural ppp = 20; //-ppp 20
     // luminance ??? (maybe generated??)
-    //const std::string_view taskDivider = "--task-division=region:10:10"; //pixel/row/column
+    const Dimensions taskDivision {10, 10}; //--task-division=region:10:10/row/column/pixel
     //const std::string_view numThreads = "--task-concurrency=total"; //1,2...
     //const std::string_view queue = "--task-size=unbounded"; //20,50...
     
@@ -26,10 +26,9 @@ int main(int argc, char* argv[])
     Camera camera {cam::focus, cam::front, cam::up, dimensions};
     Image img {1, resolution, dimensions};
 
-    auto divider = std::make_unique<RegionDivider>(dimensions, Dimensions{10, 10});
     PathTracingThreadPool pathTracer {
-        PathTracingThreadPool::totalConcurrency,
-        100, std::move(divider)
+        PathTracingThreadPool::totalConcurrency, 100,
+        TaskDivider{dimensions, taskDivision}
     };
 
     auto writer = makeImageWriter(destiny, format);

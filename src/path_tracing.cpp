@@ -1,10 +1,28 @@
 #include "path_tracing.hpp"
 
+bool TaskDivider::getNextTask(Task& task)
+{
+    if (j == width)
+    {
+        j = 0;
+        i = numbers::min(i + regionHeight, height);
+        if (i == height)
+            return false;
+    }
+    
+    task.start = {i, j};
+    task.end = {numbers::min(i + regionHeight, height),
+                numbers::min(j + regionWidth, width)};
+
+    j = numbers::min(j + regionWidth, width);
+
+    return true;
+}
+
 PathTracingThreadPool::
 PathTracingThreadPool(const Index numWorkers, const Index queueSize,
-        std::unique_ptr<TaskDivider>&& divider)
-
-    : tasks{queueSize}, taskDivider{std::move(divider)}
+        const TaskDivider& divider)
+    : tasks{queueSize}, taskDivider{divider}
 {
     auto hw = std::thread::hardware_concurrency();
     const Index nThreads = numWorkers <= 0
@@ -14,25 +32,27 @@ PathTracingThreadPool(const Index numWorkers, const Index queueSize,
     threadPool.resize(nThreads);
 }
 
-void leaderRoutine(TaskQueue& tasks, TaskDivider& divider)
+void PathTracingThreadPool::leaderRoutine(TaskQueue& tasks, TaskDivider& divider)
 {
     Task task;
     while (divider.getNextTask(task))
     {
         tasks.enqueue(task);
     }
-    tasks.stop(); //WARNING: Hasta que se acabe, no parar de golpe
+    tasks.stop(); // Tell threads not to block if queue is empty, but to quit
 }
 
-void workerRoutine(TaskQueue& tasks, const Camera& camera,
-        Image& img, const ObjectSet& objects, Index ppp)
+void PathTracingThreadPool::workerRoutine(TaskQueue& tasks,
+        const Camera& camera, Image& img, const ObjectSet& objects, Index ppp)
 {
+    // Each thread has its own unique camera, to avoid critical section
+    // at generating random numbers.
     Camera cam {camera};
     Task task {};
     while (tasks.dequeue(task))
     {
-        for (Index i : std::views::iota(task.start.i, task.end.i))
-        for (Index j : std::views::iota(task.start.j, task.end.j))
+        for (Index i : numbers::range(task.start.i, task.end.i)) //for i = start.i .. end.i
+        for (Index j : numbers::range(task.start.j, task.end.j))
         {
             Point hit;
             Direction normal;
@@ -55,20 +75,13 @@ void workerRoutine(TaskQueue& tasks, const Camera& camera,
             };
 
             Emission meanColor {0, 0, 0};
-            for ([[maybe_unused]] Index k : std::views::iota(Index{0}, ppp))
+            for ([[maybe_unused]] Index k : numbers::range(0, ppp))
             {
                 Ray ray = cam.randomRay(i, j);
-                Emission color = trace(ray);
-                meanColor.r += color.r;
-                meanColor.g += color.g;
-                meanColor.b += color.b;
+                meanColor = meanColor + trace(ray);
             }
             // Thread-safe operation: a pixel is not assigned to two different threads 
-            img(i, j) = RGBPixel {
-                meanColor.r / ppp,
-                meanColor.g / ppp,
-                meanColor.b / ppp
-            };
+            img(i, j) = RGBPixel (meanColor / ppp);
         }
     }
 }
@@ -77,7 +90,7 @@ void PathTracingThreadPool::render(const Camera& cam, Image& img,
         const ObjectSet& objects, Index ppp)
 {
     leader = std::thread(leaderRoutine, 
-            std::ref(tasks), std::ref(*taskDivider));
+            std::ref(tasks), std::ref(taskDivider));
     for (auto& worker : threadPool)
     {
         worker = std::thread(workerRoutine, std::ref(tasks),

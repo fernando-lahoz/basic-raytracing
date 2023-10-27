@@ -2,7 +2,6 @@
 #include "image.hpp"
 #include "numbers.hpp"
 
-#include <ranges>
 #include <charconv>
 #include <concepts>
 

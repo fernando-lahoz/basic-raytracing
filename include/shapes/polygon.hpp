@@ -43,7 +43,7 @@ public:
         Transformation planeToScene;
         planeToScene.revertBase({i, j, k, origin});
 
-        for (Index v : std::views::iota(Index{0}, N))
+        for (Index v : numbers::range(0, N))
         {
             const auto[x, y] = points[v];
             this->border.vertices[v] = planeToScene * Point{x, y, 0};

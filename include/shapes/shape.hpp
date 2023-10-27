@@ -2,8 +2,7 @@
 
 #include "color_spaces.hpp"
 #include "ray_tracing.hpp"
-
-struct Emission : RGBTuple {};
+#include "light.hpp"
 
 class Shape 
 {

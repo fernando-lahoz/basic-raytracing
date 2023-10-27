@@ -26,12 +26,13 @@ Usage: ./tone_mapper [OTPION...] INPUT_FILE OUTPUT_FILE
 
 auto usage(int argc, char *argv[])
 {
-    auto checkOpt = [](std::string_view str, std::string_view opt1, std::string_view opt2)
+    auto checkOpt = [](std::string_view str, std::string_view opt1,
+            std::string_view opt2) -> Index
     {
         Index len1 = opt1.length(), len2 = opt2.length();
         if (str.substr(0, len1) == opt1) return len1;
         else if (str.substr(0, len2) == opt2) return len2;
-        return Index{0};
+        return 0;
     };
 
     std::string_view source, destination, strategy, format;

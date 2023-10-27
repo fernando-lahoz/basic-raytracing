@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cmath>
-#include <ranges>
 #include <istream>
 #include <ostream>
 #include <iomanip>

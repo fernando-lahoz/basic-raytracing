@@ -85,8 +85,8 @@ std::ostream& operator<<(std::ostream& os, const Base& base)
 
 void Transformation::makeIdentity(Real m[4][4])
 {
-    for (auto i : std::views::iota(0, 4))
-        for (auto j : std::views::iota(0, 4))
+    for (auto i : numbers::range(0, 4))
+        for (auto j : numbers::range(0, 4))
             if (i == j)
                 m[i][j] = 1;
             else
@@ -97,11 +97,11 @@ inline void Transformation::multiplyFromLeftBy(const Real lMatrix[4][4])
 {
     struct Vec4 { Real x, y, z, w; };
 
-    for (auto j : std::views::iota(0, 4))
+    for (auto j : numbers::range(0, 4))
     {
         Vec4 column {matrix[0][j], matrix[1][j], matrix[2][j], matrix[3][j]};
 
-        for (auto i : std::views::iota(0, 4))
+        for (auto i : numbers::range(0, 4))
         {
             Vec4 row {lMatrix[i][0], lMatrix[i][1], lMatrix[i][2], lMatrix[i][3]};
             matrix[i][j] =  column.x * row.x + 
@@ -114,8 +114,8 @@ inline void Transformation::multiplyFromLeftBy(const Real lMatrix[4][4])
 
 Transformation::Transformation(Real other[4][4])
 {
-    for (auto i : std::views::iota(0, 4))
-        for (auto j : std::views::iota(0, 4))
+    for (auto i : numbers::range(0, 4))
+        for (auto j : numbers::range(0, 4))
             matrix[i][j] = other[i][j];
 }
 
@@ -130,7 +130,7 @@ Transformation& Transformation::translate(Direction d)
 
 Transformation& Transformation::scale(Real sx, Real sy, Real sz)
 {
-    for (auto j : std::views::iota(0, 4))
+    for (auto j : numbers::range(0, 4))
     {
         matrix[0][j] *= sx;
         matrix[1][j] *= sy;
@@ -142,7 +142,7 @@ Transformation& Transformation::scale(Real sx, Real sy, Real sz)
 
 Transformation& Transformation::rotateX(Real alpha)
 {
-    for (auto j : std::views::iota(0, 4))
+    for (auto j : numbers::range(0, 4))
     {
         Real m1j = matrix[1][j];
         Real m2j = matrix[2][j];
@@ -156,7 +156,7 @@ Transformation& Transformation::rotateX(Real alpha)
 
 Transformation& Transformation::rotateY(Real alpha)
 {
-    for (auto j : std::views::iota(0, 4))
+    for (auto j : numbers::range(0, 4))
     {
         Real m0j = matrix[0][j];
         Real m2j = matrix[2][j];
@@ -170,7 +170,7 @@ Transformation& Transformation::rotateY(Real alpha)
 
 Transformation& Transformation::rotateZ(Real alpha)
 {
-    for (auto j : std::views::iota(0, 4))
+    for (auto j : numbers::range(0, 4))
     {
         Real m0j = matrix[0][j];
         Real m1j = matrix[1][j];
@@ -193,7 +193,7 @@ Direction Transformation::operator*(Direction d)
     auto dotP = [&](int i)
     {
         Real sum = 0.0;
-        for (auto j : std::views::iota(0, 3))
+        for (auto j : numbers::range(0, 3))
             sum += matrix[i][j] * d[j];
         return sum;
     };
@@ -206,7 +206,7 @@ Point Transformation::operator*(Point p)
     auto dotP = [&](int i)
     {
         Real sum = matrix[i][3];
-        for (auto j : std::views::iota(0, 3))
+        for (auto j : numbers::range(0, 3))
             sum += matrix[i][j] * p[j];
         return sum;
     };
@@ -217,9 +217,9 @@ Point Transformation::operator*(Point p)
 
 std::ostream& operator<<(std::ostream& os, const Transformation& t)
 {
-    for (auto i : std::views::iota(0, 4))
+    for (auto i : numbers::range(0, 4))
     {
-        for (auto j : std::views::iota(0, 4))
+        for (auto j : numbers::range(0, 4))
         {
             std::stringstream ss;
             //ss << std::setw(10) << std::setprecision(4) << std::fixed << t.matrix[i][j];
@@ -234,13 +234,13 @@ std::ostream& operator<<(std::ostream& os, const Transformation& t)
 
 Transformation& Transformation::revertBase(const Base& base)
 {
-    for (auto j : std::views::iota(0, 4))
+    for (auto j : numbers::range(0, 4))
     {
         Real column[4];
-        for (auto i : std::views::iota(0, 4))
+        for (auto i : numbers::range(0, 4))
             column[i] = matrix[i][j];
 
-        for (auto i : std::views::iota(0, 3)) //This must be 3
+        for (auto i : numbers::range(0, 3)) //This must be 3
         {
             matrix[i][j] =  base.u[i] * column[0] +
                             base.v[i] * column[1] +
@@ -289,15 +289,15 @@ Transformation& Transformation::changeBase(const Base& base)
     auto fmuladd = [](Vec4 v, Vec4 w)
     {
         Real sum = 0.0;
-        for (auto k : std::views::iota(0, 4))
+        for (auto k : numbers::range(0, 4))
             sum += v[k] * w[k];
         return sum;
     };
 
-    for (auto j : std::views::iota(0, 4))
+    for (auto j : numbers::range(0, 4))
     {
         Vec4 column;
-        for (auto i : std::views::iota(0, 4))
+        for (auto i : numbers::range(0, 4))
             column[i] = matrix[i][j];
 
         matrix[0][j] = fmuladd(row0, column);

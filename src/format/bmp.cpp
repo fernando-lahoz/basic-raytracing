@@ -171,15 +171,13 @@ bool bmp::read(std::istream& is, Image& img)
     else if (bitsPerElem == 32) extractFunction = &extractPixel<Word<4>>;
 
     auto [width, height] = img.dimensions();
-    for (Index i : std::views::iota(Index{0}, height) | std::views::reverse)
+    for (Index i : numbers::range(0, height) | std::views::reverse)
+    for (Index j : numbers::range(0, width))
     {
-        for (Index j : std::views::iota(Index{0}, width))
-        {
-            RGBPixel pixel;
-            if (!extractFunction(is, img, pixel, j))
-                return false;
-            img(i, j) = pixel;
-        }
+        RGBPixel pixel;
+        if (!extractFunction(is, img, pixel, j))
+            return false;
+        img(i, j) = pixel;
     }
             
     return true;
@@ -264,9 +262,9 @@ bool bmp::write(std::ostream& os, const Image& img)
     if (bitsPerElem == 16) insertFunction = &insertPixel<Word<2>>;
     else if (bitsPerElem == 32) insertFunction = &insertPixel<Word<4>>;
 
-    for (Index i : std::views::iota(Index{0}, height) | std::views::reverse)
-        for (Index j : std::views::iota(Index{0}, width))
-            insertFunction(os, img, img(i, j), j);
+    for (Index i : numbers::range(0, height) | std::views::reverse)
+    for (Index j : numbers::range(0, width))
+        insertFunction(os, img, img(i, j), j);
 
     return true;
 }

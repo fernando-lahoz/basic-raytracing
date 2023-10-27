@@ -37,7 +37,6 @@ set(SubProjects
 
 set(Libraries
     # ¡El orden importa!
-    task_divider
     tone_mapping
     image
     color_spaces
