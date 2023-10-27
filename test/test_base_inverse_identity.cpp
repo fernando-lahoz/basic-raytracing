@@ -38,19 +38,30 @@ int main()
     //t.revertBase(b);
     t.revertBase(b);
     rb.revertBase(b);
-    cb = Transformation::Inverse(rb);
+    //cb = Transformation::Inverse(rb);
+    cb.changeBase(b);
     std::cout << "\nBase:\n" << rb << '\n';
     std::cout << "\nInverse:\n" << cb << '\n';
+
+    Real matrix[4][4] = {
+        {1, 2, 3, 4},
+        {5, 6, 7, 8},
+        {9, 10, 11, 12},
+        {13, 14, 15, 16}
+    };  
+    Transformation m {matrix};
+
+    std::cout << "\nMatrix:\n" << m << '\n';
+    std::cout << "\nMatrix:\n" << m.changeBase(b).revertBase(b) << '\n';
+    std::cout << "\nMatrix:\n" << m.revertBase(b).changeBase(b) << '\n';
 
 /*
     auto seconds = benchmark(1000000000, [&]()
     {
         t.changeBase(b).revertBase(b);
     });
-
-    
 */
-    auto seconds = benchmark(1000000000, [&]()
+    auto seconds = benchmark(100000000, [&]()
     {
         t.changeBase(b).revertBase(b);
         //t.apply(cb).apply(rb);

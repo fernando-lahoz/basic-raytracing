@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bounded_queue.hpp"
+#include "queue/bounded_queue.hpp"
 
 #include <algorithm>
 

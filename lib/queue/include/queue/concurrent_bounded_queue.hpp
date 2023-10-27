@@ -3,7 +3,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "bounded_queue.hpp"
+#include "queue/bounded_queue.hpp"
 
 template <typename Ty>
 class ConcurrentBoundedQueue

@@ -7,45 +7,46 @@
 #include <iomanip>
 #include <sstream>
 #include <optional>
+#include <array>
 
 #include "numbers.hpp"
 #include "macros/constructor_wrapper.hpp"
 
-class Vector
+class Vec3
 {
 protected:
-    Real values[4];
+    Real values[3];
 
-    Vector(Real x, Real y, Real z, Real p) : values{x, y, z, p} {}
+    Vec3(Real x, Real y, Real z) : values{x, y, z} {}
 
 public:
-    Vector() : values{} {};
+    Vec3() : values{} {};
 
     [[nodiscard]] Real& operator[](int index) { return values[index]; }
 
     [[nodiscard]] Real operator[](int index) const { return values[index]; };
 
-    friend std::istream& operator>>(std::istream& is, Vector& v);
-    friend std::ostream& operator<<(std::ostream& os, Vector v);
+    friend std::istream& operator>>(std::istream& is, Vec3& v);
+    friend std::ostream& operator<<(std::ostream& os, Vec3 v);
 };
 
-std::istream& operator>>(std::istream& is, Vector& v);
-std::ostream& operator<<(std::ostream& os, Vector v);
+std::istream& operator>>(std::istream& is, Vec3& v);
+std::ostream& operator<<(std::ostream& os, Vec3 v);
 
-class Point : public Vector
+class Point : public Vec3
 {
 public:
-    Point() : Vector{0, 0, 0, 1} {}
+    Point() : Vec3{0, 0, 0} {}
 
-    Point(Real x, Real y, Real z) : Vector{x, y, z, 1} {}
+    Point(Real x, Real y, Real z) : Vec3{x, y, z} {}
 };
 
-class Direction : public Vector
+class Direction : public Vec3
 {
 public:
-    Direction() : Vector{0, 0, 0, 0} {}
+    Direction() : Vec3{0, 0, 0} {}
 
-    Direction(Real x, Real y, Real z) : Vector{x, y, z, 0} {}
+    Direction(Real x, Real y, Real z) : Vec3{x, y, z} {}
 };
 
 [[nodiscard]] Real norm(Direction d);
@@ -70,7 +71,7 @@ public:
 [[nodiscard]] Direction operator-(Point p, Point q);
 
 // Producto escalar
-[[nodiscard]] Real dot(Vector u, Vector v);
+[[nodiscard]] Real dot(Vec3 u, Vec3 v);
 
 // Producto vectorial
 [[nodiscard]] Direction cross(Direction u, Direction v);
@@ -94,9 +95,8 @@ private:
 
     void multiplyFromLeftBy(const Real lMatrix[4][4]);
 
-    Transformation(Real other[4][4]);
-
 public:
+    Transformation(Real other[4][4]);
     Transformation() { makeIdentity(matrix); }
 
     [[maybe_unused]] Transformation& translate(Direction d);
@@ -118,7 +118,7 @@ public:
     [[nodiscard]] Point operator*(Point p);
     [[nodiscard]] Direction operator*(Direction d);
 
-    CONSTRUCTOR_WRAPPER(Transformation, Inverse)
+    //CONSTRUCTOR_WRAPPER(Transformation, Inverse)
 
     friend std::ostream& operator<<(std::ostream& os, const Transformation& t);
 };

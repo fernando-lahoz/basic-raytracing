@@ -1,12 +1,12 @@
 #include "geometry.hpp"
 
-std::istream& operator>>(std::istream& is, Vector& v)
+std::istream& operator>>(std::istream& is, Vec3& v)
 {
     is >> v.values[0] >> v.values[1] >> v.values[2];
     return is;
 }
 
-std::ostream& operator<<(std::ostream& os, Vector v)
+std::ostream& operator<<(std::ostream& os, Vec3 v)
 {
     os << '(' << v.values[0] << ", " << v.values[1] << ", " << v.values[2] << ')';
     return os;
@@ -62,7 +62,7 @@ Direction operator-(Point p, Point q)
 }
 
 // Producto escalar
-Real dot(Vector u, Vector v)
+Real dot(Vec3 u, Vec3 v)
 {
     return u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
 }
@@ -121,9 +121,9 @@ Transformation::Transformation(Real other[4][4])
 
 Transformation& Transformation::translate(Direction d)
 {
-    matrix[0][3] += d[0];
-    matrix[1][3] += d[1];
-    matrix[2][3] += d[2]; 
+    matrix[0][3] += d[0] * matrix[3][3];
+    matrix[1][3] += d[1] * matrix[3][3];
+    matrix[2][3] += d[2] * matrix[3][3];
 
     return *this;
 }
@@ -193,7 +193,7 @@ Direction Transformation::operator*(Direction d)
     auto dotP = [&](int i)
     {
         Real sum = 0.0;
-        for (auto j : std::views::iota(0, 4))
+        for (auto j : std::views::iota(0, 3))
             sum += matrix[i][j] * d[j];
         return sum;
     };
@@ -205,54 +205,14 @@ Point Transformation::operator*(Point p)
 {
     auto dotP = [&](int i)
     {
-        Real sum = 0.0;
-        for (auto j : std::views::iota(0, 4))
+        Real sum = matrix[i][3];
+        for (auto j : std::views::iota(0, 3))
             sum += matrix[i][j] * p[j];
         return sum;
     };
 
     auto divider = dotP(3);
     return {dotP(0) / divider, dotP(1) / divider, dotP(2) / divider};
-}
-
-Transformation::Transformation(Inverse&& inv)
-{
-    auto m = [&](int i, int j) { return inv.original.matrix[i][j]; };
-
-    auto cofactor = [&](int u, int v, int w)
-    {
-        matrix[u][0] = m(1, v) * m(2, w) - m(2, v) * m(1, w);
-        matrix[u][1] = m(2, v) * m(0, w) - m(0, v) * m(2, w);
-        matrix[u][2] = m(0, v) * m(1, w) - m(1, v) * m(0, w);
-    };
-
-    const int U = 0, V = 1, W = 2, O = 3;
-
-    cofactor(U, V, W);
-    cofactor(V, W, U);
-    cofactor(W, U, V);
-
-    auto rowDotCol = [&](int row, int col)
-    {
-        return matrix[row][0] * m(0, col) +
-               matrix[row][1] * m(1, col) +
-               matrix[row][2] * m(2, col);
-    };
-
-    Real det = rowDotCol(U, U);
-
-    matrix[U][3] = - rowDotCol(U, O) / det;
-    matrix[V][3] = - rowDotCol(V, O) / det;
-    matrix[W][3] = - rowDotCol(W, O) / det;
-
-    for (auto j : std::views::iota(0, 3))
-    {
-        matrix[U][j] /= det;
-        matrix[V][j] /= det;
-        matrix[W][j] /= det;
-        matrix[O][j] = 0.0;
-    }  
-    matrix[3][3] = 1.0;
 }
 
 std::ostream& operator<<(std::ostream& os, const Transformation& t)
@@ -280,7 +240,7 @@ Transformation& Transformation::revertBase(const Base& base)
         for (auto i : std::views::iota(0, 4))
             column[i] = matrix[i][j];
 
-        for (auto i : std::views::iota(0, 4))
+        for (auto i : std::views::iota(0, 3)) //This must be 3
         {
             matrix[i][j] =  base.u[i] * column[0] +
                             base.v[i] * column[1] +
@@ -294,33 +254,39 @@ Transformation& Transformation::revertBase(const Base& base)
 
 Transformation& Transformation::changeBase(const Base& base)
 {
-    auto getCofactorFrom = [](Vector y, Vector z)
+    using Vec4 = std::array<Real, 4>;
+
+    auto getCofactorFrom = [](Vec3 y, Vec3 z) -> Vec4
     {
-        return Direction { y[1] * z[2] - y[2] * z[1],
-                           y[2] * z[0] - y[0] * z[2],
-                           y[0] * z[1] - y[1] * z[0] };
+        return { y[1] * z[2] - y[2] * z[1],
+                 y[2] * z[0] - y[0] * z[2],
+                 y[0] * z[1] - y[1] * z[0], 0 };
     };
 
-    auto divide = [](Vector& d, Real k)
+    auto dot3 = [](Vec3 u, Vec4 v) -> Real
+    {
+        return u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
+    };
+
+    auto divide = [](Vec4& d, Real k)
         { d[0] /= k; d[1] /= k; d[2] /= k; d[3] /= k; };
 
-    Vector row0 = getCofactorFrom(base.v, base.w);
+    Vec4 row0 = getCofactorFrom(base.v, base.w);
 
-    Real det = dot(base.u, row0);
+    Real det = dot3(base.u, row0);
 
-    Vector row1 = getCofactorFrom(base.w, base.u);
-    Vector row2 = getCofactorFrom(base.u, base.v);
-    Point row3 {};
+    Vec4 row1 = getCofactorFrom(base.w, base.u);
+    Vec4 row2 = getCofactorFrom(base.u, base.v);
 
-    row0[3] = - dot(base.o, row0);
-    row1[3] = - dot(base.o, row1);
-    row2[3] = - dot(base.o, row2);
+    row0[3] = - dot3(base.o, row0);
+    row1[3] = - dot3(base.o, row1);
+    row2[3] = - dot3(base.o, row2);
 
     divide(row0, det);
     divide(row1, det);
     divide(row2, det);
 
-    auto fmuladd = [](Vector v, Vector w)
+    auto fmuladd = [](Vec4 v, Vec4 w)
     {
         Real sum = 0.0;
         for (auto k : std::views::iota(0, 4))
@@ -330,7 +296,7 @@ Transformation& Transformation::changeBase(const Base& base)
 
     for (auto j : std::views::iota(0, 4))
     {
-        Vector column;
+        Vec4 column;
         for (auto i : std::views::iota(0, 4))
             column[i] = matrix[i][j];
 

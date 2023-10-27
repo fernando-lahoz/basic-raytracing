@@ -9,12 +9,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Ofast -fno-exceptions -march=native")
 
 #----------------------- ORGANIZACIÓN DE BINARIOS ------------------------------
 
-set(OSBitness 32)
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(OSBitness 64)
-endif()
-
-set(FullOutputDir "${CMAKE_SOURCE_DIR}/bin/${CMAKE_SYSTEM_NAME}${OSBitness}/${CMAKE_BUILD_TYPE}")
+set(FullOutputDir "${CMAKE_SOURCE_DIR}/bin/")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${FullOutputDir}/static libs")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${FullOutputDir}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
@@ -26,14 +21,23 @@ include_directories(include src test)
 set(Executables
     path_tracer
     tone_mapper
+
+    test/test_base_inverse_identity
+    test/test_planetary_station
+)
+
+# Header Only
+set(HeaderOnlyProjects
+    queue
 )
 
 set(SubProjects
-    concurrent_bounded_queue
+    
 )
 
 set(Libraries
     # ¡El orden importa!
+    task_divider
     tone_mapping
     image
     color_spaces
@@ -47,11 +51,9 @@ set(Libraries
 
 #------------------------ COMPILACIÓN DE BIBLIOTECAS ---------------------------
 
-foreach(Project IN LISTS SubProjects)
-    include_directories("lib/${Project}/include")
-    if(NOT TARGET ${Project})
-        add_subdirectory("lib/${Project}")
-    endif()
+#Header only
+foreach(Header IN LISTS HeaderOnlyProjects)
+    include_directories("lib/${Header}/include")
 endforeach()
 
 foreach(Lib IN LISTS Libraries)

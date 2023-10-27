@@ -1,27 +1,8 @@
 #include "path_tracing.hpp"
 
-bool PixelDivider::getNextTask(Task& task)
-{
-    if (i == height - 1 && j == width)
-        return false;
-
-    if (j == width)
-    {
-        j = 0;
-        i++;
-    }
-    
-    task.start = {i, j};
-    task.end = {i + 1, j + 1};
-
-    j++;
-
-    return true;
-}
-
 PathTracingThreadPool::
 PathTracingThreadPool(const Index numWorkers, const Index queueSize,
-        std::unique_ptr<TaskDivisionMachine>&& divider)
+        std::unique_ptr<TaskDivider>&& divider)
 
     : tasks{queueSize}, taskDivider{std::move(divider)}
 {
@@ -33,8 +14,7 @@ PathTracingThreadPool(const Index numWorkers, const Index queueSize,
     threadPool.resize(nThreads);
 }
 
-void leaderRoutine(TaskQueue& tasks,
-        TaskDivisionMachine& divider)
+void leaderRoutine(TaskQueue& tasks, TaskDivider& divider)
 {
     Task task;
     while (divider.getNextTask(task))
@@ -103,7 +83,6 @@ void PathTracingThreadPool::render(const Camera& cam, Image& img,
         worker = std::thread(workerRoutine, std::ref(tasks),
                 std::ref(cam), std::ref(img), std::ref(objects), ppp);
     }
-        
 
     leader.join();
     for (auto& worker : threadPool)

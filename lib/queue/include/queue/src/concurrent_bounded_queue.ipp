@@ -1,6 +1,6 @@
 #pragma once
 
-#include "concurrent_bounded_queue.hpp"
+#include "queue/concurrent_bounded_queue.hpp"
 
 template <typename Ty>
 ConcurrentBoundedQueue<Ty>::
