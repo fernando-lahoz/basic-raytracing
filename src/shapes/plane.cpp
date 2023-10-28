@@ -9,7 +9,7 @@ Real Plane::intersect(const Ray& ray, Real minT, Point& hit, Direction& normal) 
         return Ray::nohit;
 
     const auto t = (dot(n, o - p)) / nd;
-    if (t < 0 || Ray::ge(t, minT))
+    if (t < 0 || Ray::further(t, minT))
         return Ray::nohit;
 
     hit = ray.hitPoint(t);

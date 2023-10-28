@@ -18,7 +18,7 @@ struct Ray
 
     constexpr static inline Real nohit = -1;
 
-    static inline bool ge(Real a, Real b) { return b >= 0 && a >= b; }
+    static inline bool further(Real t, Real minT) { return minT >= 0 && t >= minT; }
 
     inline Point hitPoint(Real t) const { return p + (d * t); }
 };
