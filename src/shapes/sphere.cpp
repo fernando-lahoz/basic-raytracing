@@ -25,7 +25,7 @@ Real Sphere::intersect(const Ray& ray, Real minT, Point& hit, Direction& normal)
     }
     else
     {
-        const auto t = right;
+        const auto t = left + right;
         if (Ray::further(t, minT)) return Ray::nohit;
 
         const auto hitPoint = ray.hitPoint(t);
