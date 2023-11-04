@@ -116,7 +116,7 @@ template <typename WordT>
 bool extractPixel(std::istream& is, const Image& img, RGBPixel& pixel, Index j)
 {
     auto inputValue = [&](Natural s) -> Real
-        { return (s * img.luminance()) / img.resolution(); };
+        { return (s * PrecisionReal{img.luminance()}) / img.resolution(); };
 
     static constexpr Natural wordsize = sizeof(WordT) * 8;
 
@@ -188,7 +188,7 @@ void insertPixel(std::ostream& os, const Image& img, const RGBPixel& pixel, Inde
 {
     auto outputValue = [&](Real v) -> Natural
     {
-        Natural val = std::round(v * (img.resolution() / img.luminance()));
+        Natural val = std::round(v * (img.resolution() / PrecisionReal{img.luminance()}));
         return numbers::min(val, img.resolution());
     };
 

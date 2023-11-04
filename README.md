@@ -24,4 +24,10 @@ As a result, the following executables should appear inside `./bin` directory:
  - **path_tracer:** ...
  - **tone_mapper:** ...
 
-Run with `--help` for additional information of usage. 
+Run with `--help` for additional information of usage.
+
+Temp command for testing
+
+```
+./path_tracer && ./tone_mapper -s gamma:2.2 -f ppm cornell_box_1.ppm cornell_box_MAPPED.ppm
+```

@@ -12,7 +12,7 @@ bool ppm::write(std::ostream& os, const Image& img)
 {
     auto outputValue = [&](Real v) -> Natural
     {
-        Natural val = std::round(v * (img.resolution() / img.luminance()));
+        Natural val = std::round(v * (img.resolution() / PrecisionReal{img.luminance()}));
         return numbers::min(val, img.resolution());
     };
 
@@ -146,7 +146,7 @@ bool ppm::read(std::istream& is, Image& img)
     auto stateMachineNextStep = [&](std::string_view str)
     {
         auto inputValue = [&](Natural s) -> Real
-            { return (s * img.luminance()) / img.resolution(); };
+            { return (s * PrecisionReal{img.luminance()}) / img.resolution(); };
 
         static Index i = 0;
         Natural temp = 0;

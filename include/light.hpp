@@ -15,14 +15,29 @@ public:
         return {this->r + other.r, this->g + other.g, this->b + other.b};
     }
 
+    inline Emission operator*(const Emission& other) const
+    {
+        return {this->r * other.r, this->g * other.g, this->b * other.b};
+    }
+
     inline Emission operator/(const Real k) const
     {
         return {r / k, g / k, b / k};
     }
 
+    inline Emission operator*(const Real k) const
+    {
+        return {r * k, g * k, b * k};
+    }
+
     operator RGBPixel() const
     {
         return {r, g, b};
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const Emission& color)
+    {
+        return os << "(" << color.r << ", " << color.g << ", " << color.b << ")";
     }
 };
 
@@ -38,5 +53,10 @@ public:
     inline Point position() const
     {
         return p;
+    }
+
+    inline Emission color() const
+    {
+        return e;
     }
 };

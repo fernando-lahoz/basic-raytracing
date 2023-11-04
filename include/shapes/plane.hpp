@@ -10,22 +10,6 @@ concept BorderClass = requires (const Ty border, const Point p, const PlaneTy<Ty
     {border.isInside(p, base)} -> std::same_as<bool>;
 };
 
-template <typename BorderTy>
-class LimitedPlane : public Shape
-{
-protected:
-    Direction n;
-    Point o;
-    BorderTy border;
-public:
-    LimitedPlane(Point reference, Direction normal, BorderTy border, Emission color)
-        : Shape{color}, n{normalize(normal)}, o{reference}, border{border} {}
-
-    virtual Real intersect(const Ray& ray, Real minT, Point& hit, Direction& normal) const override;
-
-    friend BorderTy;
-};
-
 class Plane : public Shape
 {
 protected:
@@ -38,6 +22,24 @@ public:
     virtual Real intersect(const Ray& ray, Real minT, Point& hit, Direction& normal) const override;
 };
 
-#define CHECK_BORDER_CONCEPT(BorderTy) static_assert(BorderClass<BorderTy, LimitedPlane>);
+template <typename BorderTy>
+class LimitedPlane : public Plane
+{
+protected:
+    BorderTy border;
+public:
+    LimitedPlane(Point reference, Direction normal, BorderTy border, Emission color)
+        : Plane{reference, normal, color}, border{border} {}
 
-#include "shapes/limited_plane.ipp"
+    virtual Real intersect(const Ray& ray, Real minT, Point& hit, Direction& normal) const override
+    {
+        const auto t = Plane::intersect(ray, minT, hit, normal);
+        if (!border.isInside(ray.hitPoint(t), *this))
+            return t;
+        return Ray::nohit;
+    }
+
+    friend BorderTy;
+};
+
+#define CHECK_BORDER_CONCEPT(BorderTy) static_assert(BorderClass<BorderTy, LimitedPlane>);

@@ -25,9 +25,18 @@ inline Dimensions Image::dimensions() const
     return {nColumns, nRows}; 
 }
 
+inline Real Image::updateLuminance() 
+{
+    Real max = 1;
+    for (Index i : numbers::range(0, pixels()))
+        max = numbers::max(red(i), green(i), blue(i), max);
+    maxLuminance = max;
+    return max; 
+}
+
 inline Real Image::luminance() const 
 {
-    return maxLuminance; 
+    return maxLuminance;
 }
 
 inline Natural Image::resolution() const 

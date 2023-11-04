@@ -60,6 +60,13 @@ public:
      */
     Real luminance() const;
 
+    /**
+     * @brief Updates the maximum luminance value within the image.
+     * 
+     * @return Max value of luminance inside this image after the update.
+     */
+    Real updateLuminance();
+
     Natural resolution() const;
 
     void changeResolution(Natural c);

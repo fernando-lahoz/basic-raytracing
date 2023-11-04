@@ -26,14 +26,22 @@ Plane wall_right {Point{0, 0, 3}, Direction{0, 0, -1}, Emission{1, 0, 1}};
 Plane wall_roof {Point{0, 3, 0}, Direction{0, -1, 0}, Emission{0, 1, 0}};
 Plane wall_floor {Point{0, -3, 0}, Direction{0, 1, 0}, Emission{0, 0, 1}};
 
-Disk disk_1 {{-0.3, -0.5, 0.2}, {4.5, -1.2, 0}, 1, {0, 0, 0}};
+//Disk disk_1 {{-0.3, -0.5, 0.2}, {4.5, -1.2, 0}, 1, {0.01, 0.01, 0.02}};
+
+PointLight light {{4.5, 2.6, -1}, {1, 1, 1}};
+PointLight light2 {{5.5, -2.6, 2}, {1, 1, 1}};
 
 ObjectSet objects
 {
-    ball_1, ball_2, ball_3,
-    wall_background, wall_roof, wall_floor,
-    wall_left, wall_right,
-    disk_1
+    { // objects
+        ball_1, ball_2, ball_3,
+        wall_background, wall_roof, wall_floor,
+        wall_left, wall_right,
+        //disk_1
+    },
+    { // lights
+        light, light2
+    }
 };
 
 class Init

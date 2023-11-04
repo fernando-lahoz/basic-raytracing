@@ -28,4 +28,3 @@ https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rend
 
 --PR4---------------------------------------------------------------------------
 
-********* DIFFERENT THREAD SAFE QUEUES IMPLEMENTATION ????????? *******

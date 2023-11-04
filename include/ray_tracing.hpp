@@ -2,6 +2,7 @@
 
 #include "geometry.hpp"
 #include "image.hpp"
+#include "light.hpp"
 
 #include <vector>
 #include <ostream>
@@ -9,7 +10,16 @@
 
 class Shape;
 
+#if 0
 using ObjectSet = std::vector<std::reference_wrapper<const Shape>>;
+#endif
+
+struct ObjectSet
+{
+    std::vector<std::reference_wrapper<const Shape>> objects;
+    std::vector<std::reference_wrapper<const PointLight>> pointLights;
+};
+
 
 struct Ray
 {
@@ -23,7 +33,6 @@ struct Ray
     inline Point hitPoint(Real t) const { return p + (d * t); }
 };
 
-using PrecisionReal = double;
 using UniformDistribution = std::uniform_real_distribution<PrecisionReal>;
 using RandomSeed = std::random_device;
 using RandomGenerator = std::mt19937;

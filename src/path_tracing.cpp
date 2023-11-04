@@ -42,6 +42,79 @@ void PathTracingThreadPool::leaderRoutine(TaskQueue& tasks, TaskDivider& divider
     tasks.stop(); // Tell threads not to block if queue is empty, but to quit
 }
 
+#include <iostream>
+
+#if 0
+Emission trace(const ObjectSet& objSet, const Ray& ray)
+{
+    Point hit;
+    Direction normal;
+
+    Real minT = Ray::nohit;
+    const Shape* hitObj = nullptr;
+    for (const Shape& obj : objSet.objects)
+    {
+        const auto its = obj.intersect(ray, minT, hit, normal);
+        if (its != Ray::nohit)
+        {
+            minT = its;
+            hitObj = &obj;
+        } 
+    }
+
+    return (hitObj != nullptr) ? hitObj->color() : Emission{0, 0, 0};  
+}
+#elif 1
+Emission trace(const ObjectSet& objSet, const Ray& ray)
+{
+    Point hit;
+    Direction normal;
+
+    Real minT = Ray::nohit;
+    const Shape* hitObj = nullptr;
+    for (const Shape& obj : objSet.objects)
+    {
+        const auto its = obj.intersect(ray, minT, hit, normal);
+        if (its != Ray::nohit)
+        {
+            minT = its;
+            hitObj = &obj;
+        } 
+    }
+    if (minT == Ray::nohit)
+        return {0, 0, 0};
+
+    Emission color {0, 0, 0};
+    for (const PointLight& light : objSet.pointLights)
+    {
+        const Direction d = light.position() - hit;
+        const Direction dn = normalize(d);
+        
+        const Ray shadowRay {hit + normal * 0.00001, dn};
+        Real distanceToLight = norm(d);
+        for (const Shape& obj : objSet.objects)
+        {
+            Direction dummyN;
+            Point dummyHP;
+            const auto its = obj.intersect(shadowRay, distanceToLight, dummyHP, dummyN);
+            if (its != Ray::nohit)
+                goto skipLight;
+        }
+        goto addLigth;
+    skipLight:
+        continue;
+
+    addLigth:
+        const Real d2 = dot(d, d);
+        const Emission emission = light.color() / d2;
+        const Real term = std::abs(dot(normal, dn));
+        color = color + (emission * hitObj->color() * term);
+    }
+
+    return color;  
+}
+#endif
+
 void PathTracingThreadPool::workerRoutine(TaskQueue& tasks,
         const Camera& camera, Image& img, const ObjectSet& objects, Index ppp)
 {
@@ -54,31 +127,11 @@ void PathTracingThreadPool::workerRoutine(TaskQueue& tasks,
         for (Index i : numbers::range(task.start.i, task.end.i)) //for i = start.i .. end.i
         for (Index j : numbers::range(task.start.j, task.end.j))
         {
-            Point hit;
-            Direction normal;
-
-            auto trace = [&](const Ray& ray) -> Emission
-            {
-                Real minT = Ray::nohit;
-                const Shape* hitObj = nullptr;
-                for (const Shape& obj : objects)
-                {
-                    const auto its = obj.intersect(ray, minT, hit, normal);
-                    if (its != Ray::nohit)
-                    {
-                        minT = its;
-                        hitObj = &obj;
-                    } 
-                }
-
-                return (hitObj != nullptr) ? hitObj->color() : Emission{0, 0, 0};
-            };
-
             Emission meanColor {0, 0, 0};
             for ([[maybe_unused]] Index k : numbers::range(0, ppp))
             {
                 Ray ray = cam.randomRay(i, j);
-                meanColor = meanColor + trace(ray);
+                meanColor = meanColor + trace(objects, ray);
             }
             // Thread-safe operation: a pixel is not assigned to two different threads 
             img(i, j) = RGBPixel (meanColor / ppp);

@@ -7,6 +7,7 @@
 #include <ranges>
 
 using Real = float;
+using PrecisionReal = double;
 using Natural = unsigned long long;
 using Integer = long long;
 
