@@ -1,6 +1,9 @@
 #include "scenes/cornell_box_test.ipp"
 #include "scenes/cornell_box_1.ipp"
 
+#include <chrono>
+#include <iostream>
+
 #include "image.hpp"
 #include "image_writer.hpp"
 #include "path_tracing.hpp"
@@ -10,13 +13,23 @@
 // Change namespace to change the scene
 using namespace cornell_box_test;
 
+double measure(auto lambda)
+{
+    auto start = std::chrono::system_clock::now();
+
+    lambda();
+
+    auto end = std::chrono::system_clock::now();
+    return std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
+}
+
 int main(int argc, char* argv[])
 {
     SET_PROGRAM_NAME(argv);
     const Dimensions dimensions {256, 256}; //-d 500:500
     const Natural resolution = (Natural{1} << 32) - 1; //8bit/16bit/32bit if bmp
-    const Natural ppp = 10; //-ppp 20
-    const Dimensions taskDivision {10, 10}; //--task-division=region:10:10/row/column/pixel
+    const Natural ppp = 50; //-ppp 20
+    const Dimensions taskDivision {32, 32}; //--task-division=region:10:10/row/column/pixel
     //const std::string_view numThreads = "--task-concurrency=total"; //1,2...
     //const std::string_view queue = "--task-size=unbounded"; //20,50...
     const std::string_view destination = "cornell_box_test.ppm";
@@ -36,7 +49,11 @@ int main(int argc, char* argv[])
     
     pathTracer.render(camera, img, objects, ppp);
 
-    img.updateLuminance();
+    const auto seconds = measure([&]()
+    {
+        img.updateLuminance();
+    });
+    std::cout << "Render finished in " << seconds << " s\n";
 
     if (!writer->write(img))
         program::exit(program::err(), "Could not write destination file.");
