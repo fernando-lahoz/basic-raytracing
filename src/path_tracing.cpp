@@ -42,73 +42,69 @@ void PathTracingThreadPool::leaderRoutine(TaskQueue& tasks, TaskDivider& divider
     tasks.stop(); // Tell threads not to block if queue is empty, but to quit
 }
 
-#include <iostream>
-
 #if 0
-Emission trace(const ObjectSet& objSet, const Ray& ray)
+Color trace(const ObjectSet& objSet, const Ray& ray)
 {
-    Point hit;
-    Direction normal;
-
-    Real minT = Ray::nohit;
+    Real t = Ray::nohit;
     const Shape* hitObj = nullptr;
     for (const Shape& obj : objSet.objects)
     {
-        const auto its = obj.intersect(ray, minT, hit, normal);
-        if (its != Ray::nohit)
+        const auto its = obj.intersect(ray);
+        if (Ray::isHit(its) && (!Ray::isHit(t) || its < t))
         {
-            minT = its;
+            t = its;
             hitObj = &obj;
         } 
     }
 
-    return (hitObj != nullptr) ? hitObj->color() : Emission{0, 0, 0};  
+    return (hitObj != nullptr) ? hitObj->color() : Color{0, 0, 0};  
 }
 #elif 1
-Emission trace(const ObjectSet& objSet, const Ray& ray)
+Color trace(const ObjectSet& objSet, const Ray& ray)
 {
-    Point hit;
-    Direction normal;
-
-    Real minT = Ray::nohit;
+    Real t = Ray::nohit;
     const Shape* hitObj = nullptr;
     for (const Shape& obj : objSet.objects)
     {
-        const auto its = obj.intersect(ray, minT, hit, normal);
-        if (its != Ray::nohit)
+        const auto its = obj.intersect(ray);
+        if (Ray::isHit(its) && (!Ray::isHit(t) || its < t))
         {
-            minT = its;
+            t = its;
             hitObj = &obj;
-        } 
+        }
     }
-    if (minT == Ray::nohit)
+    if (!Ray::isHit(t))
         return {0, 0, 0};
 
-    Emission color {0, 0, 0};
+    Point hit = ray.hitPoint(t);
+    Direction normal = hitObj->normal(ray.d, hit);
+    Color color {0, 0, 0};
     for (const PointLight& light : objSet.pointLights)
     {
         const Direction d = light.position() - hit;
-        const Direction dn = normalize(d);
-        
-        const Ray shadowRay {hit + normal * 0.00001, dn};
-        Real distanceToLight = norm(d);
-        for (const Shape& obj : objSet.objects)
-        {
-            Direction dummyN;
-            Point dummyHP;
-            const auto its = obj.intersect(shadowRay, distanceToLight, dummyHP, dummyN);
-            if (its != Ray::nohit)
-                goto skipLight;
-        }
-        goto addLigth;
-    skipLight:
-        continue;
-
-    addLigth:
         const Real d2 = dot(d, d);
-        const Emission emission = light.color() / d2;
-        const Real term = std::abs(dot(normal, dn));
-        color = color + (emission * hitObj->color() * term);
+        const Direction dN = d / std::sqrt(d2); // normalized d
+        
+        const Direction epsilon = dN * 0.0001;
+
+        const Ray shadowRay {hit + epsilon, dN};
+        auto isThereNearerObject = [&](Real distance) -> bool
+        {
+            for (const Shape& obj : objSet.objects)
+            {
+                const auto its = obj.intersect(shadowRay);
+                if (Ray::isHit(its) && its < distance)
+                    return true;
+            }
+            return false;
+        };
+
+        if (isThereNearerObject(norm(d)))
+            continue;
+
+        const Color emission = light.color() / d2;
+        const Real term = std::abs(dot(normal, dN));
+        color = color + (emission * hitObj->color() * (1 / numbers::pi) * term);
     }
 
     return color;  
@@ -127,7 +123,7 @@ void PathTracingThreadPool::workerRoutine(TaskQueue& tasks,
         for (Index i : numbers::range(task.start.i, task.end.i)) //for i = start.i .. end.i
         for (Index j : numbers::range(task.start.j, task.end.j))
         {
-            Emission meanColor {0, 0, 0};
+            Color meanColor {0, 0, 0};
             for ([[maybe_unused]] Index k : numbers::range(0, ppp))
             {
                 Ray ray = cam.randomRay(i, j);

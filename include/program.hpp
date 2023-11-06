@@ -22,7 +22,6 @@ ErrorExit err(int returnVal = 1) { return ErrorExit{std::cerr, returnVal}; }
     std::exit(ex.returnVal);
 }
 
-//std::cerr
 template <typename Ty, typename ...Args>
 void exit(DirectExit ex, Ty head, Args&& ...tail)
 {

@@ -105,16 +105,17 @@ int main(int argc, char* argv[])
     if (!reader->read(img))
         program::exit(program::err(), "Could not read any image from source file.");
 
-    auto writer = makeImageWriter(destination, format);
-    if (writer == nullptr)
-        program::exit(program::err(), "Could not open destination file or format not available.");
-
     auto toneMaping = makeToneMappingStrategy(strategy);
     if (toneMaping == nullptr)
         program::exit(program::err(), "Strategy not supported.");
 
+    auto writer = makeImageWriter(destination, format);
+    if (writer == nullptr)
+        program::exit(program::err(), "Could not open destination file or format not available.");
+
     img.toneMap(*toneMaping);
     img.changeResolution(255);
+
     if (!writer->write(img))
         program::exit(program::err(), "Could not write destination file.");
 

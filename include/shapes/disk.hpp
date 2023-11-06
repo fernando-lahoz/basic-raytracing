@@ -16,7 +16,7 @@ CHECK_BORDER_CONCEPT(DiskBorder)
 class Disk : public LimitedPlane<DiskBorder>
 {
 public:
-    Disk(Direction normal, Point center, Real radius, Emission color)
+    Disk(Direction normal, Point center, Real radius, Color color)
         : LimitedPlane{center, normal, DiskBorder{radius}, color} {}
 };
 

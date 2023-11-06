@@ -7,11 +7,13 @@
 class Shape 
 {
 protected:
-    Emission emission;
+    Color emission;
 
-    Shape (Emission color) : emission{color} {}
+    Shape (Color color) : emission{color} {}
 public:
-    virtual Real intersect(const Ray& ray, Real minT, Point& hit, Direction& normal) const = 0;
+    virtual Real intersect(const Ray& ray) const = 0;
 
-    inline Emission color() const { return emission; };
+    virtual Direction normal(const Direction d, const Point hit) const = 0;
+
+    inline Color color() const { return emission; };
 };

@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-Real Sphere::intersect(const Ray& ray, Real minT, Point& hit, Direction& normal) const
+Real Sphere::intersect(const Ray& ray) const
 {
     const auto [p, d] = ray;
     const auto p_c = p - c;
@@ -17,38 +17,23 @@ Real Sphere::intersect(const Ray& ray, Real minT, Point& hit, Direction& normal)
     const auto t1 = left + right;
     const auto t2 = left - right;
 
-    const auto t = [&]() 
+    if (t1 < 0)
     {
-        if (t1 < 0)
-        {
-            if (t2 < 0) return Ray::nohit;
-            else return t2;
-        }
-        else
-        {
-            if (t2 < 0) return t1;
-            else return numbers::min(t1, t2);
-        }
-    }();
-
-    if (Ray::further(t, minT)) return Ray::nohit;
-
-    if (left > 0)
-    { // Ray from OUTSIDE
-        const auto hitPoint = ray.hitPoint(t);
-        hit = hitPoint;
-        normal = (hitPoint - c) / r;
-
-        //std::cout << "Ray origin: " << p << "; Normal: " << normal << "; Hitpoint: " << hitPoint << '\n';
-        return t;
+        if (t2 < 0) return Ray::nohit;
+        else return t2;
     }
     else
-    { // Ray from INSIDE
-        const auto hitPoint = ray.hitPoint(t);
-        hit = hitPoint;
-        normal = (c - hitPoint) / r;
-
-        //std::cout << "Ray origin: " << p << "; Normal: " << normal << "; Hitpoint: " << hitPoint << '\n';
-        return t;
+    {
+        if (t2 < 0) return t1;
+        else return numbers::min(t1, t2);
     }
+}
+
+Direction Sphere::normal(const Direction d, const Point hit) const
+{
+    const Direction n = c - hit;
+    if (dot(n, d) > 0)
+        return n / r;
+    else
+        return n / -r;
 }

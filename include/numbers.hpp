@@ -3,7 +3,7 @@
 #include <cfloat>
 #include <sstream>
 #include <iomanip>
-#include <limits>
+#include <numbers>
 #include <ranges>
 
 using Real = float;
@@ -38,5 +38,7 @@ constexpr inline Range range(Index start, Index end)
 {
     return std::views::iota(start, end);
 }
+
+constexpr inline Real pi = std::numbers::pi_v<Real>;
 
 } //namespace numbers

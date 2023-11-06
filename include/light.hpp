@@ -2,30 +2,30 @@
 
 #include "geometry.hpp"
 
-class Emission
+class Color
 {
 private:
     Real r, g, b;
 public:
-    inline Emission(Real red, Real green, Real blue)
+    inline Color(Real red, Real green, Real blue)
         : r{red}, g{green}, b{blue} {}
 
-    inline Emission operator+(const Emission& other) const
+    inline Color operator+(const Color& other) const
     {
         return {this->r + other.r, this->g + other.g, this->b + other.b};
     }
 
-    inline Emission operator*(const Emission& other) const
+    inline Color operator*(const Color& other) const
     {
         return {this->r * other.r, this->g * other.g, this->b * other.b};
     }
 
-    inline Emission operator/(const Real k) const
+    inline Color operator/(const Real k) const
     {
         return {r / k, g / k, b / k};
     }
 
-    inline Emission operator*(const Real k) const
+    inline Color operator*(const Real k) const
     {
         return {r * k, g * k, b * k};
     }
@@ -35,7 +35,7 @@ public:
         return {r, g, b};
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const Emission& color)
+    friend std::ostream& operator<<(std::ostream& os, const Color& color)
     {
         return os << "(" << color.r << ", " << color.g << ", " << color.b << ")";
     }
@@ -45,9 +45,9 @@ class PointLight
 {
 private:
     Point p;
-    Emission e;
+    Color e;
 public:
-    PointLight(Point point, Emission emission)
+    PointLight(Point point, Color emission)
         : p{point}, e{emission} {}
 
     inline Point position() const
@@ -55,7 +55,7 @@ public:
         return p;
     }
 
-    inline Emission color() const
+    inline Color color() const
     {
         return e;
     }

@@ -33,7 +33,7 @@ class Polygon : public LimitedPlane<PolygonBorder<N>>
 {
 public:
     Polygon(Direction normal, Point origin, Point reference,
-            const std::array<FlatPoint, N>& points, Emission color)
+            const std::array<FlatPoint, N>& points, Color color)
         
         : LimitedPlane<PolygonBorder<N>>{origin, normal, PolygonBorder<N>{}, color}
     {

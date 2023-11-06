@@ -18,7 +18,7 @@ Real Equalization_Clamping::operator()(const Image&, Real v) const
 
 Real Gamma::operator()(const Image& img, Real v) const
 {
-    return std::pow(v / img.luminance() , gammaValue);
+    return std::pow(v / img.luminance() , 1 / gammaValue);
 }
 
 Real Gamma_Clamping::operator()(const Image&, Real v) const

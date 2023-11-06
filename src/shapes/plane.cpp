@@ -1,7 +1,7 @@
 #include "shapes/plane.hpp"
 #include "ray_tracing.hpp"
 
-Real Plane::intersect(const Ray& ray, Real minT, Point& hit, Direction& normal) const
+Real Plane::intersect(const Ray& ray) const
 {
     const auto [p, d] = ray;
     const auto nd = dot(n, d);
@@ -9,11 +9,12 @@ Real Plane::intersect(const Ray& ray, Real minT, Point& hit, Direction& normal) 
         return Ray::nohit;
 
     const auto t = (dot(n, o - p)) / nd;
-    if (t < 0 || Ray::further(t, minT))
-        return Ray::nohit;
-
-    hit = ray.hitPoint(t);
-    normal = nd < 0 ? n : -1 * n;
-
     return t;
+    // if (t < 0) return Ray::nohit;
+    // else return t;
+}
+
+Direction Plane::normal(const Direction d, const Point) const
+{
+    return -dot(n, d) * n;
 }

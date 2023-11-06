@@ -2,6 +2,8 @@
 #include "shapes.hpp"
 #include "geometry.hpp"
 
+#include <iostream>
+
 Camera::Camera(Point pinhole, Direction front, Direction up, Dimensions dim)
     : f { front },
       l { normalize(cross(up, front)) * ((norm(up) * dim.width) / dim.height) },
