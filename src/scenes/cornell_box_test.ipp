@@ -1,6 +1,6 @@
 #pragma once
 
-#include "shapes.hpp"
+#include "object_set.hpp"
 #include "ray_tracing.hpp"
 
 #include <iostream>
@@ -22,8 +22,9 @@ Sphere right_sphere {Point{-0.5, -0.7, -0.25}, 0.3, Color{0.56, 1, 1}};
 Plane left_plane {Point{1, 0, 0}, Direction{-1, 0, 0}, Color{1, 0, 0}};
 Plane right_plane {Point{-1, 0, 0}, Direction{1, 0, 0}, Color{0, 1, 0}};
 Plane floor_plane {Point{0, -1, 0}, Direction{0, 1, 0}, Color{1, 1, 1}};
-Plane ceiling_plane {Point{0, 1, 0}, Direction{0, -1, 0}, Color{1, 1, 1}};
 Plane back_plane {Point{0, 0, 1}, Direction{0, 0, -1}, Color{1, 1, 1}};
+Plane ceiling_plane {Point{0, 1, 0}, Direction{0, -1, 0}, Color{1, 1, 1}};
+//AreaLight<Plane> ceiling_plane {Plane{Point{0, 1, 0}, Direction{0, -1, 0}, Color{1, 1, 1}}};
 
 PointLight light {{0, 0.5, 0}, {1, 1, 1}};
 

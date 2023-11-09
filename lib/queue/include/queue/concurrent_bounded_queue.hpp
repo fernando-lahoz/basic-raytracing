@@ -9,8 +9,8 @@ template <typename Ty>
 class ConcurrentBoundedQueue
 {
 private:
-    std::condition_variable_any waitEnqueue, waitDequeue;
-	std::mutex mtx;
+    std::condition_variable waitEnqueue, waitDequeue;
+    std::mutex mtx;
     BoundedQueue<Ty> queue;
     bool stopped;
 

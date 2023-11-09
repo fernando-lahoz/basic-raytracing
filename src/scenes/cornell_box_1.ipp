@@ -1,6 +1,6 @@
 #pragma once
 
-#include "shapes.hpp"
+#include "object_set.hpp"
 #include "ray_tracing.hpp"
 
 #include <iostream>

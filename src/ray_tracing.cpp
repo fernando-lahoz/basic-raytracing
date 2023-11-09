@@ -10,7 +10,7 @@ Camera::Camera(Point pinhole, Direction front, Direction up, Dimensions dim)
       u { up },
       o { pinhole },
       pixelWidth{ 2.0 / dim.width }, pixelHeight{ 2.0 / dim.height },
-      randomX{pixelWidth}, randomY{pixelHeight},
+      randomX{0, pixelWidth}, randomY{0, pixelHeight},
       rd{}
 {
     gen.seed(rd());

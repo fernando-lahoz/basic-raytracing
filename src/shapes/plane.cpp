@@ -16,5 +16,5 @@ Real Plane::intersect(const Ray& ray) const
 
 Direction Plane::normal(const Direction d, const Point) const
 {
-    return -dot(n, d) * n;
+    return dot(n, d) <= 0 ? n : -1 * n;
 }

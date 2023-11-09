@@ -11,10 +11,8 @@ bool TaskDivider::getNextTask(Task& task)
     }
     
     task.start = {i, j};
-    task.end = {numbers::min(i + regionHeight, height),
-                numbers::min(j + regionWidth, width)};
-
     j = numbers::min(j + regionWidth, width);
+    task.end = {numbers::min(i + regionHeight, height), j};
 
     return true;
 }
@@ -42,42 +40,9 @@ void PathTracingThreadPool::leaderRoutine(TaskQueue& tasks, TaskDivider& divider
     tasks.stop(); // Tell threads not to block if queue is empty, but to quit
 }
 
-#if 0
-Color trace(const ObjectSet& objSet, const Ray& ray)
+Color castShadowRays(const ObjectSet& objSet, const Direction& normal,
+        const Point& hit, const Shape& hitObj)
 {
-    Real t = Ray::nohit;
-    const Shape* hitObj = nullptr;
-    for (const Shape& obj : objSet.objects)
-    {
-        const auto its = obj.intersect(ray);
-        if (Ray::isHit(its) && (!Ray::isHit(t) || its < t))
-        {
-            t = its;
-            hitObj = &obj;
-        } 
-    }
-
-    return (hitObj != nullptr) ? hitObj->color() : Color{0, 0, 0};  
-}
-#elif 1
-Color trace(const ObjectSet& objSet, const Ray& ray)
-{
-    Real t = Ray::nohit;
-    const Shape* hitObj = nullptr;
-    for (const Shape& obj : objSet.objects)
-    {
-        const auto its = obj.intersect(ray);
-        if (Ray::isHit(its) && (!Ray::isHit(t) || its < t))
-        {
-            t = its;
-            hitObj = &obj;
-        }
-    }
-    if (!Ray::isHit(t))
-        return {0, 0, 0};
-
-    Point hit = ray.hitPoint(t);
-    Direction normal = hitObj->normal(ray.d, hit);
     Color color {0, 0, 0};
     for (const PointLight& light : objSet.pointLights)
     {
@@ -104,19 +69,97 @@ Color trace(const ObjectSet& objSet, const Ray& ray)
 
         const Color emission = light.color() / d2;
         const Real term = std::abs(dot(normal, dN));
-        color = color + (emission * hitObj->color() * (1 / numbers::pi) * term);
+        color = color + (emission * hitObj.color() * (1 / numbers::pi) * term);
     }
+    return color;
+}
 
-    return color;  
+auto findIntersection(const ObjectSet& objSet, const Ray& ray)
+{
+    Real t = Ray::nohit;
+    const Shape *hitObj = nullptr;
+    for (const Shape& obj : objSet.objects)
+    {
+        const auto its = obj.intersect(ray);
+        if (Ray::isHit(its) && (!Ray::isHit(t) || its < t))
+        {
+            t = its;
+            hitObj = &obj;
+        } 
+    }
+    return std::pair{t, hitObj};
+}
+
+#if 0
+Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer&)
+{
+    auto [t, hitObj] = findIntersection(objSet, ray);
+    return (Ray::isHit(t)) ? hitObj->color() : Color{0, 0, 0};  
+}
+#elif 0
+Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer&)
+{
+    auto [t, hitObj] = findIntersection(objSet, ray);
+    if (!Ray::isHit(t))
+        return {0, 0, 0};
+
+    Point hit = ray.hitPoint(t);
+    Direction normal = hitObj->normal(ray.d, hit);
+    return castShadowRays(objSet, normal, hit, *hitObj);  
+}
+#elif 1
+Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer& random,
+        const Index bounces = 20)
+{
+    if (bounces == 0)
+        return {0, 0, 0};
+
+    auto [t, hitObj] = findIntersection(objSet, ray);
+
+    if (!Ray::isHit(t))
+        return {0, 0, 0};
+
+    if (hitObj->isAreaLight())
+        return hitObj->color();
+
+    Point hit = ray.hitPoint(t);
+    Direction normal = hitObj->normal(ray.d, hit);
+    Color directLight = castShadowRays(objSet, normal, hit, *hitObj);
+
+    // Generate random ray
+    const Real randomLatitud = std::acos(std::sqrt(1 - random()));
+    const Real randomAzimuth = 2 * numbers::pi * random();
+
+    const Direction ortogonal1 = normal[0] == 0.0
+        ? Direction{normal[0], normal[2], -normal[1]}
+        : Direction{normal[1], -normal[0], normal[2]};
+    const Direction ortogonal2 = cross(normal, ortogonal1);
+    const Base local {normal, ortogonal1, ortogonal2, hit};
+    Transformation rotation {};
+    rotation.rotateY(randomLatitud).rotateX(randomAzimuth).revertBase(local);
+
+    Direction d = normalize(rotation * Direction{1, 0, 0});
+    const Direction epsilon = d * 0.0001;
+    Ray secondaryRay {hit + epsilon, d};
+
+    // std::cout << "L: " << randomLatitud << " - A: " << randomAzimuth;
+    // std::cout << " - n: " << normal << " - d: " << d << '\n';
+
+    Color indirectLight = trace(objSet, secondaryRay, random, bounces - 1);
+
+    //return numbers::pi * indirectLight * (hitObj->color() * (1/numbers::pi)) + directLight;  
+    return indirectLight * hitObj->color() + directLight;
 }
 #endif
 
 void PathTracingThreadPool::workerRoutine(TaskQueue& tasks,
-        const Camera& camera, Image& img, const ObjectSet& objects, Index ppp)
+        const Camera& camera, Image& img, const ObjectSet& objects, Index ppp,
+        ProgressBar& progressBar)
 {
     // Each thread has its own unique camera, to avoid critical section
     // at generating random numbers.
     Camera cam {camera};
+    Randomizer random {0, 1};
     Task task {};
     while (tasks.dequeue(task))
     {
@@ -127,26 +170,36 @@ void PathTracingThreadPool::workerRoutine(TaskQueue& tasks,
             for ([[maybe_unused]] Index k : numbers::range(0, ppp))
             {
                 Ray ray = cam.randomRay(i, j);
-                meanColor = meanColor + trace(objects, ray);
+                meanColor = meanColor + trace(objects, ray, random);
             }
             // Thread-safe operation: a pixel is not assigned to two different threads 
             img(i, j) = RGBPixel (meanColor / ppp);
         }
+        progressBar.incrementProgress();
     }
 }
 
 void PathTracingThreadPool::render(const Camera& cam, Image& img,
         const ObjectSet& objects, Index ppp)
 {
+    float totalSize = taskDivider.width * taskDivider.height;
+    float regionSize = taskDivider.regionWidth * taskDivider.regionHeight;
+    ProgressBar progressBar {regionSize / totalSize};
+
     leader = std::thread(leaderRoutine, 
             std::ref(tasks), std::ref(taskDivider));
     for (auto& worker : threadPool)
     {
         worker = std::thread(workerRoutine, std::ref(tasks),
-                std::ref(cam), std::ref(img), std::ref(objects), ppp);
+                std::ref(cam), std::ref(img), std::ref(objects), ppp,
+                std::ref(progressBar));
     }
+
+    progressBar.launch();
 
     leader.join();
     for (auto& worker : threadPool)
         worker.join();
+    progressBar.stop();
+    progressBar.join();
 }

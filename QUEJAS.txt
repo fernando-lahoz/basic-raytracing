@@ -1,3 +1,5 @@
 front x left != up -> sale el opuesto!
 
 ¿Cuá es el color de las esferas?
+
+12 min de render -> 1000x1000, ppp = 500, task division 10x10, 12 cores
