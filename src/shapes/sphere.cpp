@@ -31,9 +31,9 @@ Real Sphere::intersect(const Ray& ray) const
 
 Direction Sphere::normal(const Direction d, const Point hit) const
 {
-    const Direction n = c - hit;
+    const Direction n = hit - c;
     if (dot(n, d) > 0)
-        return n / r;
+        return n / -r; // dentro
     else
-        return n / -r;
+        return n / r; // fuera
 }

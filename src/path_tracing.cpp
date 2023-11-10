@@ -69,7 +69,7 @@ Color castShadowRays(const ObjectSet& objSet, const Direction& normal,
 
         const Color emission = light.color() / d2;
         const Real term = std::abs(dot(normal, dN));
-        color = color + (emission * hitObj.color() * (1 / numbers::pi) * term);
+        color = color + (emission * hitObj.color() / numbers::pi) * term;
     }
     return color;
 }
@@ -133,13 +133,14 @@ Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer& random,
     const Direction ortogonal1 = normal[0] == 0.0
         ? Direction{normal[0], normal[2], -normal[1]}
         : Direction{normal[1], -normal[0], normal[2]};
+
     const Direction ortogonal2 = cross(normal, ortogonal1);
     const Base local {normal, ortogonal1, ortogonal2, hit};
     Transformation rotation {};
     rotation.rotateY(randomLatitud).rotateX(randomAzimuth).revertBase(local);
 
     Direction d = normalize(rotation * Direction{1, 0, 0});
-    const Direction epsilon = d * 0.0001;
+    const Direction epsilon = normal * 0.001;
     Ray secondaryRay {hit + epsilon, d};
 
     // std::cout << "L: " << randomLatitud << " - A: " << randomAzimuth;
