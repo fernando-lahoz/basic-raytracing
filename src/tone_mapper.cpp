@@ -8,7 +8,7 @@
 static constexpr std::string_view helpStr = R"(
 Usage: ./tone_mapper [OTPION...] INPUT_FILE OUTPUT_FILE
     
-  -s, --strategy=STRING      Use this tone mapping strategy.
+  -s, --strategy=STRING        Use this tone mapping strategy.
                                Equalizes if not specified.
 
       Available strategies:

@@ -28,3 +28,9 @@ https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rend
 
 --PR4---------------------------------------------------------------------------
 
+Direct
+
+98.0426 s 1000x1000 500spp
+
+Indirect Point Light 1000x1000 500spp
+4252.88 s

@@ -21,9 +21,9 @@ protected:
 public:
     Vec3() : values{} {};
 
-    [[nodiscard]] Real& operator[](int index) { return values[index]; }
+    [[nodiscard]] inline Real& operator[](int index) { return values[index]; }
 
-    [[nodiscard]] Real operator[](int index) const { return values[index]; };
+    [[nodiscard]] inline Real operator[](int index) const { return values[index]; };
 
     friend std::istream& operator>>(std::istream& is, Vec3& v);
     friend std::ostream& operator<<(std::ostream& os, Vec3 v);

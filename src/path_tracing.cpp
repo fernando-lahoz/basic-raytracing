@@ -130,11 +130,15 @@ Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer& random,
     const Real randomLatitud = std::acos(std::sqrt(1 - random()));
     const Real randomAzimuth = 2 * numbers::pi * random();
 
-    const Direction ortogonal1 = normal[0] == 0.0
-        ? Direction{normal[0], normal[2], -normal[1]}
-        : Direction{normal[1], -normal[0], normal[2]};
+    // ESTE MÉTODO NO GENERA VECTORES ORTOGONALES A LA NORMAL :(
+    // const Direction ortogonal1 = normal[0] == 0.0
+    //     ? Direction{normal[0], normal[2], -normal[1]}
+    //     : Direction{normal[1], -normal[0], normal[2]};
 
-    const Direction ortogonal2 = cross(normal, ortogonal1);
+    const Direction ortogonal1 = normalize(cross(normal,
+        ((normal[0] == 1) | (normal[0] == -1) ? Direction{0, 1, 0} : Direction{1, 0, 0})));
+    const Direction ortogonal2 = cross(ortogonal1, normal);
+
     const Base local {normal, ortogonal1, ortogonal2, hit};
     Transformation rotation {};
     rotation.rotateY(randomLatitud).rotateX(randomAzimuth).revertBase(local);
@@ -143,12 +147,16 @@ Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer& random,
     const Direction epsilon = d * 0.0001;
     Ray secondaryRay {hit + epsilon, d};
 
-    // std::cout << "L: " << randomLatitud << " - A: " << randomAzimuth;
-    // std::cout << " - n: " << normal << " - d: " << d << '\n';
+    //QUITAR--------------------------
+    // if (bounces == 20)
+    // {
+    //     std::cout << "L: " << randomLatitud << " - A: " << randomAzimuth;
+    //     std::cout << " - n: " << normal << " - d: " << d << '\n';
+    // }
+    //--------------------------------
 
     Color indirectLight = trace(objSet, secondaryRay, random, bounces - 1);
-
-    //return numbers::pi * indirectLight * (hitObj->color() * (1/numbers::pi)) + directLight;  
+  
     return indirectLight * hitObj->color() + directLight;
 }
 #endif
@@ -167,6 +175,13 @@ void PathTracingThreadPool::workerRoutine(TaskQueue& tasks,
         for (Index i : numbers::range(task.start.i, task.end.i)) //for i = start.i .. end.i
         for (Index j : numbers::range(task.start.j, task.end.j))
         {
+            //QUITAR--------------------------
+            //if (i < 404 || i > 417 || j < 126 || j > 141)
+            //    continue;
+            // if (i != 410 || j != 133)
+            //     continue;
+            //--------------------------------
+
             Color meanColor {0, 0, 0};
             for ([[maybe_unused]] Index k : numbers::range(0, ppp))
             {
@@ -201,6 +216,7 @@ void PathTracingThreadPool::render(const Camera& cam, Image& img,
     leader.join();
     for (auto& worker : threadPool)
         worker.join();
+
     progressBar.stop();
     progressBar.join();
 }

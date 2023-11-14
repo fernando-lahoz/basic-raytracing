@@ -102,7 +102,7 @@ public:
                 timepointPrev = timepoint;
             }
         } while (progress > 0);
-        printBar(progress, timeLeft);
+        printBar(1.0f, FormatedTime{});
         os << std::endl;
     }
 
