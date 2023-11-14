@@ -140,7 +140,7 @@ Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer& random,
     rotation.rotateY(randomLatitud).rotateX(randomAzimuth).revertBase(local);
 
     Direction d = normalize(rotation * Direction{1, 0, 0});
-    const Direction epsilon = normal * 0.001;
+    const Direction epsilon = d * 0.0001;
     Ray secondaryRay {hit + epsilon, d};
 
     // std::cout << "L: " << randomLatitud << " - A: " << randomAzimuth;

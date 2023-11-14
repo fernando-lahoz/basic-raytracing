@@ -26,7 +26,7 @@ Plane wall_right {Point{0, 0, 3}, Direction{0, 0, -1}, Color{1, 0, 1}};
 Plane wall_floor {Point{0, -3, 0}, Direction{0, 1, 0}, Color{0, 0, 1}};
 
 //Plane wall_roof {Point{0, 3, 0}, Direction{0, -1, 0}, Color{0, 1, 0}};
-AreaLight<Plane> wall_roof {Plane{Point{0, 3, 0}, Direction{0, -1, 0}, Color{0, 1, 0}}};
+AreaLight<Plane> wall_roof {Plane{Point{0, 3, 0}, Direction{0, -1, 0}, Color{1, 1, 1}}};
 
 //Disk disk_1 {{-0.3, -0.5, 0.2}, {4.5, -1.2, 0}, 1, {0.01, 0.01, 0.02}};
 
@@ -42,7 +42,7 @@ ObjectSet objects
         //disk_1
     },
     { // lights
-        light, light2
+        //light, light2
     }
 };
 

@@ -4,6 +4,9 @@
 #include <mutex>
 #include <condition_variable>
 #include <thread>
+#include <cmath>
+#include <chrono>
+#include <cstring>
 
 // Monitor to signal a parallel thread to update a text-based progress bar
 class ProgressBar
@@ -57,8 +60,14 @@ public:
 
     void update()
     {    
-        auto printBar = [&](float progress)
+        using FormatedTime = std::chrono::hh_mm_ss<std::chrono::seconds>;
+        auto printBar = [&](float progress, FormatedTime timeLeft)
         {
+            char timestring[20];
+            int hh = timeLeft.hours().count();
+            int mm = timeLeft.minutes().count();
+            int ss = timeLeft.seconds().count();
+            sprintf(timestring, "%02i:%02i:%02i", hh, mm, ss);
             os << "[";
             unsigned int pos = barWidth * progress;
             for (unsigned int i = 0; i < barWidth; i++) {
@@ -66,16 +75,34 @@ public:
                 else if (i == pos) os << ">";
                 else os << " ";
             }
-            os << "] " << int(progress * 100.0) << " %\r";
+            os << "] " << int(progress * 100.0) << " % (" << timestring << ")\r";
             os.flush();
         };
 
+        auto start = std::chrono::system_clock::now();
+        auto timepointPrev = start;
         float progress = 0;
+        FormatedTime timeLeft {};
         do {
-            printBar(progress);
-            progress = awaitChanges();
+            printBar(progress, timeLeft);
+            progress = std::min(awaitChanges(), 1.0f);
+            if (progress == 1.0f)
+            {
+                timeLeft = FormatedTime{};
+                break;
+            }
+            auto timepoint = std::chrono::system_clock::now();
+            auto updatetime = std::chrono::duration_cast<std::chrono::seconds>(timepoint - timepointPrev);
+            if (updatetime.count() >= 1)
+            {   
+                auto timeconsumed = std::chrono::duration_cast<std::chrono::seconds>(timepoint - start);
+                auto totaltime =  std::chrono::seconds{(unsigned long long)(std::round(timeconsumed.count() / progress))};
+                timeLeft = FormatedTime(totaltime - timeconsumed);
+
+                timepointPrev = timepoint;
+            }
         } while (progress > 0);
-        printBar(1.0); // 100%
+        printBar(progress, timeLeft);
         os << std::endl;
     }
 
