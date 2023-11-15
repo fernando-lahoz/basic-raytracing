@@ -48,7 +48,8 @@ Color castShadowRays(const ObjectSet& objSet, const Direction& normal,
     {
         const Direction d = light.position() - hit;
         const Real d2 = dot(d, d);
-        const Direction dN = d / std::sqrt(d2); // normalized d
+        const Real distance = std::sqrt(d2);
+        const Direction dN = d / distance; // normalized d
         
         const Direction epsilon = dN * 0.0001;
 
@@ -64,7 +65,7 @@ Color castShadowRays(const ObjectSet& objSet, const Direction& normal,
             return false;
         };
 
-        if (isThereNearerObject(norm(d)))
+        if (isThereNearerObject(distance))
             continue;
 
         const Color emission = light.color() / d2;
@@ -98,8 +99,8 @@ Direction rotatedDirection(const Direction& normal, const Point& hit,
     //     ? Direction{normal[0], normal[2], -normal[1]}
     //     : Direction{normal[1], -normal[0], normal[2]};
 
-    const Direction ref = ((normal[0] == 1) | (normal[0] == -1) ?
-            Direction{0, 1, 0} : Direction{1, 0, 0});
+    const Direction ref = ((std::abs(std::abs(normal[1]) - 1) < 0.1) ?
+            Direction{0, 0, 1} : Direction{0, 1, 0});
 
     const Direction ortogonal1 = normalize(cross(normal, ref));
     const Direction ortogonal2 = cross(ortogonal1, normal);
