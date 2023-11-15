@@ -2,6 +2,10 @@
 
 #include "shading.hpp"
 
+inline Color::Color()
+    : r{}, g{}, b{}
+{}
+
 inline Color::Color(Real red, Real green, Real blue)
     : r{red}, g{green}, b{blue}
 {}

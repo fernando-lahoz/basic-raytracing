@@ -55,6 +55,11 @@ Direction operator+(Direction d1, Direction d2)
     return {d1[0] + d2[0], d1[1] + d2[1], d1[2] + d2[2]};
 }
 
+Direction operator-(Direction d1, Direction d2)
+{
+    return {d1[0] - d2[0], d1[1] - d2[1], d1[2] - d2[2]};
+}
+
 // Resta de puntos: p - q = d
 Direction operator-(Point p, Point q)
 {

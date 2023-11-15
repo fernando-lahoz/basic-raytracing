@@ -41,7 +41,7 @@ void PathTracingThreadPool::leaderRoutine(TaskQueue& tasks, TaskDivider& divider
 }
 
 Color castShadowRays(const ObjectSet& objSet, const Direction& normal,
-        const Point& hit, const Shape& hitObj)
+        const Point& hit, const Color& kd)
 {
     Color color {0, 0, 0};
     for (const PointLight& light : objSet.pointLights)
@@ -69,7 +69,7 @@ Color castShadowRays(const ObjectSet& objSet, const Direction& normal,
 
         const Color emission = light.color() / d2;
         const Real term = std::abs(dot(normal, dN));
-        color = color + (emission * hitObj.color() / numbers::pi) * term;
+        color = color + (emission * kd / numbers::pi) * term;
     }
     return color;
 }
@@ -90,6 +90,27 @@ auto findIntersection(const ObjectSet& objSet, const Ray& ray)
     return std::pair{t, hitObj};
 }
 
+Direction rotatedDirection(const Direction& normal, const Point& hit,
+        const Real lat, const Real az)
+{
+    // ESTE MÉTODO NO GENERA VECTORES ORTOGONALES A LA NORMAL :(
+    // const Direction ortogonal1 = normal[0] == 0.0
+    //     ? Direction{normal[0], normal[2], -normal[1]}
+    //     : Direction{normal[1], -normal[0], normal[2]};
+
+    const Direction ref = ((normal[0] == 1) | (normal[0] == -1) ?
+            Direction{0, 1, 0} : Direction{1, 0, 0});
+
+    const Direction ortogonal1 = normalize(cross(normal, ref));
+    const Direction ortogonal2 = cross(ortogonal1, normal);
+
+    const Base local {normal, ortogonal1, ortogonal2, hit};
+    Transformation rotation {};
+    rotation.rotateY(lat).rotateX(az).revertBase(local);
+
+    return normalize(rotation * Direction{1, 0, 0});
+}
+
 #if 0
 Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer&)
 {
@@ -104,7 +125,7 @@ Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer&)
         return {0, 0, 0};
 
     Point hit = ray.hitPoint(t);
-    Direction normal = hitObj->normal(ray.d, hit);
+    auto [from, normal] = hitObj->normal(ray.d, hit);
     return castShadowRays(objSet, normal, hit, *hitObj);  
 }
 #elif 1
@@ -112,52 +133,80 @@ Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer& random,
         const Index bounces = 20)
 {
     if (bounces == 0)
-        return {0, 0, 0};
+        return Color{};
 
     auto [t, hitObj] = findIntersection(objSet, ray);
 
     if (!Ray::isHit(t))
-        return {0, 0, 0};
+        return Color{};
 
-    if (hitObj->isAreaLight())
-        return hitObj->color();
+    const Material& material = hitObj->material();
+
+    if (material.emits)
+        return material.kd;
 
     Point hit = ray.hitPoint(t);
-    Direction normal = hitObj->normal(ray.d, hit);
-    Color directLight = castShadowRays(objSet, normal, hit, *hitObj);
+    auto [from, normal] = hitObj->normal(ray.d, hit);
 
-    // Generate random ray
-    const Real randomLatitud = std::acos(std::sqrt(1 - random()));
-    const Real randomAzimuth = 2 * numbers::pi * random();
+    auto evalDiffuse = [&]()
+    {
+        // Direct light
+        const Color directLight = castShadowRays(objSet, normal, hit, material.kd);
 
-    // ESTE MÉTODO NO GENERA VECTORES ORTOGONALES A LA NORMAL :(
-    // const Direction ortogonal1 = normal[0] == 0.0
-    //     ? Direction{normal[0], normal[2], -normal[1]}
-    //     : Direction{normal[1], -normal[0], normal[2]};
+        // Generate random ray
+        const Real lat = std::acos(std::sqrt(1 - random()));
+        const Real az = 2 * numbers::pi * random();
 
-    const Direction ortogonal1 = normalize(cross(normal,
-        ((normal[0] == 1) | (normal[0] == -1) ? Direction{0, 1, 0} : Direction{1, 0, 0})));
-    const Direction ortogonal2 = cross(ortogonal1, normal);
+        const Direction d = rotatedDirection(normal, hit, lat, az);
+        const Direction epsilon = d * 0.0001;
+        Ray secondaryRay {hit + epsilon, d};
 
-    const Base local {normal, ortogonal1, ortogonal2, hit};
-    Transformation rotation {};
-    rotation.rotateY(randomLatitud).rotateX(randomAzimuth).revertBase(local);
+        // Indirect light
+        const Color indirectLight = trace(objSet, secondaryRay, random, bounces - 1);
 
-    Direction d = normalize(rotation * Direction{1, 0, 0});
-    const Direction epsilon = d * 0.0001;
-    Ray secondaryRay {hit + epsilon, d};
+        // Render eq
+        return indirectLight * material.kd + directLight;
+    };
 
-    //QUITAR--------------------------
-    // if (bounces == 20)
-    // {
-    //     std::cout << "L: " << randomLatitud << " - A: " << randomAzimuth;
-    //     std::cout << " - n: " << normal << " - d: " << d << '\n';
-    // }
-    //--------------------------------
+    auto evalReflexion = [&]()
+    {
+        Direction d = ray.d - 2 * normal * dot(ray.d, normal);
+        const Direction epsilon = d * 0.0001;
+        Ray reflectedRay {hit + epsilon, d};
+        return material.ks * trace(objSet, reflectedRay, random, bounces - 1);
+    };
 
-    Color indirectLight = trace(objSet, secondaryRay, random, bounces - 1);
-  
-    return indirectLight * hitObj->color() + directLight;
+    auto evalRefraction = [&]()
+    {
+        const Direction n = -1 * normal;
+        const Real hIndex = from == Side::in ? material.hIndex : 1 / material.hIndex;
+        const Real latOut = std::acos(dot(ray.d, n));
+        const Real latIn = std::asin(std::sin(latOut) * hIndex);
+
+        const Direction rotRef = normalize(cross(n, ray.d));
+        const Direction ortogonal2 = cross(rotRef, n);
+
+        const Base local {n, ortogonal2, rotRef, hit};
+        Transformation rotation {};
+        rotation.rotateZ(latIn).revertBase(local);
+
+        const Direction d = normalize(rotation * Direction{1, 0, 0});
+        const Direction epsilon = d * 0.0001;
+        Ray refractedRay {hit + epsilon, d};
+
+        return material.kt * trace(objSet, refractedRay, random, bounces - 1);
+    };
+
+    // Russian Roulette
+    Real pd = material.kd.p(), ps = material.ks.p(), pt = material.kt.p();
+    Real sum = pd + ps + pt;
+    if (sum > 1)
+        { pd /= sum;  ps /= sum;  pt /= sum; }
+    Real x = random();
+    if (x <= pd)                return evalDiffuse();
+    else if (x - pd <= ps)      return evalReflexion();
+    else if (x - pd - ps <= pt) return evalRefraction();
+    else return Color{};
 }
 #endif
 
@@ -175,13 +224,6 @@ void PathTracingThreadPool::workerRoutine(TaskQueue& tasks,
         for (Index i : numbers::range(task.start.i, task.end.i)) //for i = start.i .. end.i
         for (Index j : numbers::range(task.start.j, task.end.j))
         {
-            //QUITAR--------------------------
-            //if (i < 404 || i > 417 || j < 126 || j > 141)
-            //    continue;
-            // if (i != 410 || j != 133)
-            //     continue;
-            //--------------------------------
-
             Color meanColor {0, 0, 0};
             for ([[maybe_unused]] Index k : numbers::range(0, ppp))
             {

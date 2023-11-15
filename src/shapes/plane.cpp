@@ -14,7 +14,10 @@ Real Plane::intersect(const Ray& ray) const
     // else return t;
 }
 
-Direction Plane::normal(const Direction d, const Point) const
+NormalReturn Plane::normal(const Direction d, const Point) const
 {
-    return dot(n, d) <= 0 ? n : -1 * n;
+    if (dot(n, d) <= 0)
+        return {Side::out, n};
+    else
+        return {Side::in, -1 * n};
 }

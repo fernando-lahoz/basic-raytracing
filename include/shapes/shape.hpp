@@ -4,18 +4,37 @@
 #include "geometry.hpp"
 #include "ray_tracing.hpp"
 
+struct Material
+{
+    bool emits;
+    Color kd, ks, kt;
+    Real hIndex; 
+
+    static inline Material emitter(const Color& ke)
+    {
+        return {.emits = true, .kd = ke, .ks = {}, .kt = {}};
+    }
+};
+
+enum class Side {in, out};
+
+struct NormalReturn
+{
+    Side from;
+    Direction normal;
+};
+
 class Shape 
 {
 protected:
-    Color color_;
+    Material _material;
 
-    Shape (Color _color) : color_{_color} {}
+    inline Shape (const Material& material_)
+        : _material{material_} {}
 public:
     virtual Real intersect(const Ray& ray) const = 0;
 
-    virtual Direction normal(const Direction d, const Point hit) const = 0;
+    virtual NormalReturn normal(const Direction d, const Point hit) const = 0;
 
-    inline Color color() const { return color_; }
-
-    virtual bool isAreaLight() const;
+    inline const Material& material() const { return _material; }
 };

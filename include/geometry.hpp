@@ -65,6 +65,7 @@ public:
 
 // Suma de direcciones: d + d = d
 [[nodiscard]] Direction operator+(Direction d1, Direction d2);
+[[nodiscard]] Direction operator-(Direction d1, Direction d2);
 
 // Resta de puntos: p - q = d
 [[nodiscard]] Direction operator-(Point p, Point q);

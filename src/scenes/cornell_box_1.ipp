@@ -16,17 +16,16 @@ namespace cam
     Direction up {0, 1, 0};
 }
 
-Sphere ball_1 {Point{6, 0, 0}, 1, Color{1, 0, 0}};
-Sphere ball_2 {Point{7, -1.2, 0.8}, 0.9, Color{0, 1, 1}};
-Sphere ball_3 {Point{5, 0.5, -1.1}, 0.5, Color{0.6, 0.2, 0.6}};
+Sphere ball_1 {Point{6, 0, 0},      1,   Material{.emits = false, .kd = Color{1, 0, 0}}};
+Sphere ball_2 {Point{7, -1.2, 0.8}, 0.9, Material{.emits = false, .kd = Color{0, 1, 1}}};
+Sphere ball_3 {Point{5, 0.5, -1.1}, 0.5, Material{.emits = false, .kd = Color{0.6, 0.2, 0.6}}};
 
-Plane wall_background {Point{10, 0, 0}, Direction{-1, 0, 0}, Color{1, 1, 1}};
-Plane wall_left {Point{0, 0, -3}, Direction{0, 0, 1}, Color{1, 1, 0}};
-Plane wall_right {Point{0, 0, 3}, Direction{0, 0, -1}, Color{1, 0, 1}};
-Plane wall_floor {Point{0, -3, 0}, Direction{0, 1, 0}, Color{0, 0, 1}};
+Plane wall_background {Point{10, 0, 0}, Direction{-1, 0, 0}, Material{.emits = false, .kd = Color{1, 1, 1}}};
+Plane wall_left  {Point{0, 0, -3}, Direction{0, 0, 1},  Material{.emits = false, .kd = Color{1, 1, 0}}};
+Plane wall_right {Point{0, 0, 3},  Direction{0, 0, -1}, Material{.emits = false, .kd = Color{1, 0, 1}}};
+Plane wall_floor {Point{0, -3, 0}, Direction{0, 1, 0},  Material{.emits = false, .kd = Color{0, 0, 1}}};
 
-//Plane wall_roof {Point{0, 3, 0}, Direction{0, -1, 0}, Color{0, 1, 0}};
-AreaLight<Plane> wall_roof {Plane{Point{0, 3, 0}, Direction{0, -1, 0}, Color{1, 1, 1}}};
+Plane wall_roof  {Point{0, 3, 0},  Direction{0, -1, 0}, Material{.emits = false, .kd = Color{0, 1, 0}}};
 
 //Disk disk_1 {{-0.3, -0.5, 0.2}, {4.5, -1.2, 0}, 1, {0.01, 0.01, 0.02}};
 
@@ -42,7 +41,7 @@ ObjectSet objects
         //disk_1
     },
     { // lights
-        //light, light2
+        light, light2
     }
 };
 

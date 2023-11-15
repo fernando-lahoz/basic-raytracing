@@ -8,12 +8,12 @@ protected:
     Point c;
     Real r;
 public:
-    Sphere(Point center, Real radius, Color color)
-        : Shape{color}, c{center}, r{radius} {}
+    Sphere(const Point& center, Real radius, const Material& material_)
+        : Shape{material_}, c{center}, r{radius} {}
 
     virtual Real intersect(const Ray& ray) const override;
 
-    virtual Direction normal(const Direction d, const Point hit) const override;
+    virtual NormalReturn normal(const Direction d, const Point hit) const override;
     
     friend std::ostream& operator<<(std::ostream& os, const Sphere& sphere);
 };
