@@ -48,9 +48,28 @@ Usage: ./path_tracer [OTPION...] OUTPUT_FILE
 
   -q, --task-queue-size=INT        Set the number of entries of the
                                    task queue. Default size is 100.
-
-  
 )";
+
+auto usage(int argc, char *argv[])
+{
+    auto checkOpt = [](std::string_view str,
+            std::string_view opt1, std::string_view opt2) -> Index
+    {
+        Index len1 = opt1.length(), len2 = opt2.length();
+        if (str.substr(0, len1) == opt1) return len1;
+        else if (str.substr(0, len2) == opt2) return len2;
+        return 0;
+    };
+
+     for (int i = 1; i < argc; ++i)
+    {
+        std::string_view str {argv[i]};
+        if (Index pos = checkOpt(str, "-h", "--help"); pos > 0)
+        {
+            program::exit(program::direct, helpStr);
+        }
+    }
+}
 
 // Change namespace to change the scene
 using namespace cornell_box_test;
@@ -68,6 +87,7 @@ double measure(auto lambda)
 int main(int argc, char* argv[])
 {
     SET_PROGRAM_NAME(argv);
+    usage(argc, argv);
     const Dimensions dimensions {200, 200}; //-d 500:500
     const Natural resolution = (Natural{1} << 32) - 1; //8bit/16bit/32bit if bmp
     const Natural ppp = 50; //-ppp 20
