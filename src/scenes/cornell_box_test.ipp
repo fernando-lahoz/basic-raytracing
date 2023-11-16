@@ -16,8 +16,8 @@ namespace cam
     Direction up {0, 1, 0};
 }
 
-Sphere left_sphere  {Point{0.5, -0.7, 0.25},   0.3, Material{.emits = false, .kd = {0.9, 0.675, 1}}};
-Sphere right_sphere {Point{-0.5, -0.7, -0.25}, 0.3, Material{.emits = false, .kd = {0.56, 1, 1}}};
+Sphere left_sphere  {Point{0.5, -0.7, 0.25},   0.3, Material{.emits = false, .kd = {0.894, 0.666, 1}}};
+Sphere right_sphere {Point{-0.5, -0.7, -0.25}, 0.3, Material{.emits = false, .kd = {0.553, 1, 1}}};
 //Sphere left_sphere  {Point{0.5, -0.7, 0.25},   0.3, Material{.emits = false, .kd = {0.56, 1, 1}, .ks = {0.6, 0.6, 0.6}}};
 //Sphere left_sphere  {Point{0.5, -0.7, 0.25},   0.3, Material{.emits = false, .kd = {}, .ks = {1, 1, 1}}};
 //Sphere right_sphere {Point{-0.5, -0.7, -0.25}, 0.3, Material{.emits = false, .kd = {}, .ks = {}, .kt = {1, 1, 1}, .hIndex = 1.5}};
