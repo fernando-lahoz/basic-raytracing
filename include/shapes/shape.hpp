@@ -12,7 +12,7 @@ struct Material
 
     static inline Material emitter(const Color& ke)
     {
-        return {.emits = true, .kd = ke, .ks = {}, .kt = {}};
+        return {.emits = true, .kd = ke, .ks = {}, .kt = {}, .hIndex = 0};
     }
 };
 

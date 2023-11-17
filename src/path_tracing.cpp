@@ -99,7 +99,7 @@ Direction rotatedDirection(const Direction& normal, const Point& hit,
     //     ? Direction{normal[0], normal[2], -normal[1]}
     //     : Direction{normal[1], -normal[0], normal[2]};
 
-    const Direction ref = ((std::abs(std::abs(normal[1]) - 1) < 0.1) ?
+    const Direction ref = ((std::abs(std::abs(normal[1]) - 1) < 0.5) ?
             Direction{0, 0, 1} : Direction{0, 1, 0});
 
     const Direction ortogonal1 = normalize(cross(normal, ref));
