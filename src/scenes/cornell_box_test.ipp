@@ -16,18 +16,18 @@ namespace cam
     Direction up {0, 1, 0};
 }
 
-Sphere left_sphere  {Point{0.5, -0.7, 0.25},   0.3, Material{.emits = false, .kd = {0.9, 0.675, 1}}};
-Sphere right_sphere {Point{-0.5, -0.7, -0.25}, 0.3, Material{.emits = false, .kd = {0.56, 1, 1}}};
-//Sphere left_sphere  {Point{0.5, -0.7, 0.25},   0.3, Material{.emits = false, .kd = {0.56, 1, 1}, .ks = {0.6, 0.6, 0.6}}};
+//Sphere left_sphere  {Point{0.5, -0.7, 0.25},   0.3, Material{.emits = false, .kd = {0.9, 0.675, 1}}};
+//Sphere right_sphere {Point{-0.5, -0.7, -0.25}, 0.3, Material{.emits = false, .kd = {0.56, 1, 1}}};
+Sphere left_sphere  {Point{0.5, -0.7, 0.25},   0.3, Material{.emits = false, .kd = {0.56, 1, 1}, .ks = {0.6, 0.6, 0.6}}};
 //Sphere left_sphere  {Point{0.5, -0.7, 0.25},   0.3, Material{.emits = false, .kd = {}, .ks = {1, 1, 1}}};
-//Sphere right_sphere {Point{-0.5, -0.7, -0.25}, 0.3, Material{.emits = false, .kd = {}, .ks = {}, .kt = {1, 1, 1}, .hIndex = 1.5}};
+Sphere right_sphere {Point{-0.5, -0.7, -0.25}, 0.3, Material{.emits = false, .kd = {}, .ks = {}, .kt = {1, 1, 1}, .hIndex = 1.5}};
 
 Plane left_plane    {Point{1, 0, 0},  Direction{-1, 0, 0}, Material{.emits = false, .kd = {1, 0, 0}}};
 Plane right_plane   {Point{-1, 0, 0}, Direction{1, 0, 0},  Material{.emits = false, .kd = {0, 1, 0}}};
 Plane floor_plane   {Point{0, -1, 0}, Direction{0, 1, 0},  Material{.emits = false, .kd = {1, 1, 1}}};
 Plane back_plane    {Point{0, 0, 1},  Direction{0, 0, -1}, Material{.emits = false, .kd = {1, 1, 1}}};
 //Plane back_plane    {Point{0, 0, 1},  Direction{0, 0, -1}, Material{.emits = false, .kd = {0, 0, 0}, .ks = {1, 1, 1}}};
-Plane ceiling_plane {Point{0, 1, 0},  Direction{0, -1, 0}, Material{.emits = false,  .kd = {1, 1, 1}}};
+Plane ceiling_plane {Point{0, 1, 0},  Direction{0, -1, 0}, Material{.emits = true,  .kd = {1, 1, 1}}};
 
 PointLight light {{0, 0.5, 0}, {1, 1, 1}};
 
@@ -42,7 +42,7 @@ ObjectSet objects
         back_plane
     },
     {
-        light
+        //light
     }
 };
 

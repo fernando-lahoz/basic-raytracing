@@ -107,7 +107,7 @@ Direction rotatedDirection(const Direction& normal, const Point& hit,
 
     const Base local {normal, ortogonal1, ortogonal2, hit};
     Transformation rotation {};
-    rotation.rotateY(lat).rotateX(az).revertBase(local);
+    rotation.rotateZ(lat).rotateX(az).revertBase(local);
 
     return normalize(rotation * Direction{1, 0, 0});
 }
@@ -131,7 +131,7 @@ Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer&)
 }
 #elif 1
 Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer& random,
-        const Index bounces = 20)
+        const Integer bounces = 1000)
 {
     if (bounces == 0)
         return Color{};
@@ -155,7 +155,7 @@ Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer& random,
         const Color directLight = castShadowRays(objSet, normal, hit, material.kd);
 
         // Generate random ray
-        const Real lat = std::acos(std::sqrt(1 - random()));
+        const Real lat = std ::acos(std::sqrt(1-random()));
         const Real az = 2 * numbers::pi * random();
 
         const Direction d = rotatedDirection(normal, hit, lat, az);
@@ -213,7 +213,7 @@ Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer& random,
 
 void PathTracingThreadPool::workerRoutine(TaskQueue& tasks,
         const Camera& camera, Image& img, const ObjectSet& objects, Index ppp,
-        ProgressBar& progressBar)
+        TextProgressBar& progressBar)
 {
     // Each thread has its own unique camera, to avoid critical section
     // at generating random numbers.
@@ -243,7 +243,7 @@ void PathTracingThreadPool::render(const Camera& cam, Image& img,
 {
     float totalSize = taskDivider.width * taskDivider.height;
     float regionSize = taskDivider.regionWidth * taskDivider.regionHeight;
-    ProgressBar progressBar {regionSize / totalSize};
+    TextProgressBar progressBar {regionSize / totalSize};
 
     leader = std::thread(leaderRoutine, 
             std::ref(tasks), std::ref(taskDivider));

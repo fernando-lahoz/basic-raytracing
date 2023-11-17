@@ -7,7 +7,7 @@
 #include "object_set.hpp"
 
 #include "queue/concurrent_bounded_queue.hpp"
-#include "progress_bar.hpp"
+#include "progress_bar/text_progress_bar.hpp"
 
 #include <thread>
 #include <vector>
@@ -53,7 +53,7 @@ public:
 
     static void workerRoutine(TaskQueue& tasks, const Camera& camera,
             Image& img, const ObjectSet& objects, Index ppp,
-            ProgressBar& progressBar);
+            TextProgressBar& progressBar);
 
     void render(const Camera& cam, Image& img,
             const ObjectSet& objects, Index ppp);

@@ -29,10 +29,11 @@ set(Executables
 # Header Only
 set(HeaderOnlyProjects
     queue
+    kdtree
 )
 
 set(SubProjects
-    
+    progress_bar
 )
 
 set(Libraries
@@ -50,11 +51,20 @@ set(Libraries
 
 #------------------------ COMPILACIÓN DE BIBLIOTECAS ---------------------------
 
-#Header only
+#Header only Subprojects
 foreach(Header IN LISTS HeaderOnlyProjects)
     include_directories("lib/${Header}/include")
 endforeach()
 
+#Precompiled Subprojects
+foreach(Project IN LISTS SubProjects)
+    include_directories("lib/${Project}/include")
+    if(NOT TARGET ${Project})
+        add_subdirectory("lib/${Project}")
+    endif()
+endforeach()
+
+#Project modules
 foreach(Lib IN LISTS Libraries)
     string(FIND ${Lib} "/" BarPos REVERSE)
     if (${BarPos} EQUAL -1)
@@ -68,7 +78,7 @@ foreach(Lib IN LISTS Libraries)
     add_library(${LibName} STATIC "src/${Lib}.cpp")
 endforeach()
 
-#------------------------ COMPILACIÓN DE BIBLIOTECAS ---------------------------
+#------------------------ COMPILACIÓN DE EJECUTABLES ---------------------------
 
 foreach(Executable IN LISTS Executables)
 
@@ -85,14 +95,14 @@ foreach(Executable IN LISTS Executables)
     # Ejecutable a generar
     add_executable(${ExecutableName} "${ExecutablePath}")
 
-    foreach(Project IN LISTS SubProjects)
-        # Vincular módulos eternos
-        target_link_libraries(${ExecutableName} LINK_PUBLIC ${Project}) 
-    endforeach()
-
     foreach(Lib IN LISTS LibNames)
         # Vincular módulos internos
         target_link_libraries(${ExecutableName} LINK_PUBLIC ${Lib}) 
+    endforeach()
+
+    foreach(Project IN LISTS SubProjects)
+        # Vincular módulos eternos
+        target_link_libraries(${ExecutableName} LINK_PUBLIC ${Project})
     endforeach()
 
 endforeach()
