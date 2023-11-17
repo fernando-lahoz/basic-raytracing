@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
     usage(argc, argv);
     const Dimensions dimensions {200, 200}; //-d 500:500
     const Natural resolution = (Natural{1} << 32) - 1; //8bit/16bit/32bit if bmp
-    const Natural ppp = 50; //-ppp 20
+    const Natural ppp = 300; //-ppp 20
     const Dimensions taskDivision {1, 1}; //--task-division=region:10:10/row/column/pixel
     const std::string_view destination = "cornell_box_test.ppm";
     const std::string_view format = "ppm"; //--output-format=bmp

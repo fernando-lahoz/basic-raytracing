@@ -94,20 +94,20 @@ auto findIntersection(const ObjectSet& objSet, const Ray& ray)
 Direction rotatedDirection(const Direction& normal, const Point& hit,
         const Real lat, const Real az)
 {
-    // ESTE MÉTODO NO GENERA VECTORES ORTOGONALES A LA NORMAL :(
-    // const Direction ortogonal1 = normal[0] == 0.0
-    //     ? Direction{normal[0], normal[2], -normal[1]}
-    //     : Direction{normal[1], -normal[0], normal[2]};
+    //
+    const Direction ortogonal1 = (std::abs(normal[0]) < 0.1)
+        ? normalize(Direction{0, normal[2], -normal[1]})
+        : normalize(Direction{normal[1], -normal[0], 0});
 
-    const Direction ref = ((std::abs(std::abs(normal[1]) - 1) < 0.5) ?
-            Direction{0, 0, 1} : Direction{0, 1, 0});
+    // const Direction ref = ((std::abs(std::abs(normal[1]) - 1) < 0.5) ?
+    //         Direction{0, 0, 1} : Direction{0, 1, 0});
 
-    const Direction ortogonal1 = normalize(cross(normal, ref));
+    // const Direction ortogonal1 = normalize(cross(normal, ref));
     const Direction ortogonal2 = cross(ortogonal1, normal);
 
-    const Base local {normal, ortogonal1, ortogonal2, hit};
+    const Base local {normal, ortogonal2, ortogonal1, hit};
     Transformation rotation {};
-    rotation.rotateZ(lat).rotateX(az).revertBase(local);
+    rotation.rotateY(-lat).rotateX(az).revertBase(local);
 
     return normalize(rotation * Direction{1, 0, 0});
 }
@@ -204,9 +204,9 @@ Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer& random,
     if (sum > 1)
         { pd /= sum;  ps /= sum;  pt /= sum; }
     Real x = random();
-    if (x <= pd)                return evalDiffuse();
-    else if (x - pd <= ps)      return evalReflexion();
-    else if (x - pd - ps <= pt) return evalRefraction();
+    if (x <= pd)                return evalDiffuse() / pd;
+    else if (x - pd <= ps)      return evalReflexion() / ps;
+    else if (x - pd - ps <= pt) return evalRefraction() / pt;
     else return Color{};
 }
 #endif
