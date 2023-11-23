@@ -29,7 +29,7 @@ Real Sphere::intersect(const Ray& ray) const
     }
 }
 
-NormalReturn Sphere::normal(const Direction d, const Point hit) const
+Shape::Normal Sphere::normal(const Direction d, const Point hit) const
 {
     const Direction n = hit - c;
     if (dot(n, d) > 0)

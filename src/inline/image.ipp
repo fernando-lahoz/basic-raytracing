@@ -31,7 +31,7 @@ inline Real Image::updateLuminance()
     for (Index i : numbers::range(0, pixels()))
         max = numbers::max(red(i), green(i), blue(i), max);
     maxLuminance = max;
-    return max; 
+    return max;
 }
 
 inline Real Image::luminance() const 

@@ -16,12 +16,12 @@ protected:
     Direction n;
     Point o;
 public:
-    Plane(const Point& reference, const Direction& normal, const Material& material_)
-        : Shape{material_}, n{normalize(normal)}, o{reference} {}
+    Plane(const Point& reference, const Direction& normal)
+        : n{normalize(normal)}, o{reference} {}
 
     virtual Real intersect(const Ray& ray) const override;
 
-    virtual NormalReturn normal(const Direction d, const Point hit) const override;
+    virtual Normal normal(const Direction d, const Point hit) const override;
 };
 
 template <typename BorderTy>
@@ -30,8 +30,8 @@ class LimitedPlane : public Plane
 protected:
     BorderTy border;
 public:
-    LimitedPlane(Point reference, Direction normal, BorderTy border, const Material& material_)
-        : Plane{reference, normal, material_}, border{border} {}
+    LimitedPlane(Point reference, Direction normal, BorderTy border)
+        : Plane{reference, normal}, border{border} {}
 
     virtual Real intersect(const Ray& ray) const override
     {

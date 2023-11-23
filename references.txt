@@ -28,5 +28,5 @@ https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rend
 
 --PR4---------------------------------------------------------------------------
 
-How to get a orthonormal base from vector
+How to get an orthonormal base from vector
 https://www.mathworks.com/matlabcentral/answers/72631-create-orthonormal-basis-from-a-given-vector

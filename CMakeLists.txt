@@ -37,15 +37,16 @@ set(SubProjects
 )
 
 set(Libraries
-    # ¡El orden importa!
+    # ¡El orden importa! Si A depende de B, B se pone antes que A
     tone_mapping
     image
     color_spaces
     format/ppm
     format/bmp
-    shapes
     ray_tracing
     path_tracing
+    shapes
+    materials
     geometry
 )
 

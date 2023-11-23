@@ -10,7 +10,7 @@ public:
     Color();
     Color(Real red, Real green, Real blue);
 
-    inline Real p() const { return numbers::max(r, g, b); }
+    inline Real luminance() const { return numbers::max(r, g, b); }
 
     Color operator+(const Color& other) const;
     Color operator*(const Color& other) const;

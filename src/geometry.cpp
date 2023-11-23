@@ -245,7 +245,7 @@ Transformation& Transformation::revertBase(const Base& base)
         for (auto i : numbers::range(0, 4))
             column[i] = matrix[i][j];
 
-        for (auto i : numbers::range(0, 3)) //This must be 3
+        for (auto i : numbers::range(0, 3))
         {
             matrix[i][j] =  base.u[i] * column[0] +
                             base.v[i] * column[1] +

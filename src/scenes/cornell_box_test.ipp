@@ -6,6 +6,8 @@
 #include <iostream>
 #include <array>
 
+#define MS(Ty) std::make_shared<Ty>
+
 namespace cornell_box_test
 {
 
@@ -16,18 +18,44 @@ namespace cam
     Direction up {0, 1, 0};
 }
 
-//Sphere left_sphere  {Point{0.5, -0.7, 0.25},   0.3, Material{.emits = false, .kd = {0.7, 0.575, 0.8}}};
-//Sphere right_sphere {Point{-0.5, -0.7, -0.25}, 0.3, Material{.emits = false, .kd = {0.56, 1, 1}}};
-Sphere left_sphere  {Point{0.5, -0.7, 0.25},   0.3, Material{.emits = false, .kd = {0.3, 0.6, 0.6}, .ks = {0.3, 0.3, 0.3}}};
-//Sphere left_sphere  {Point{0.5, -0.7, 0.25},   0.3, Material{.emits = false, .kd = {}, .ks = {1, 1, 1}}};
-Sphere right_sphere {Point{-0.5, -0.7, -0.25}, 0.3, Material{.emits = false, .kd = {}, .ks = {0.25, 0.25, 0.25}, .kt = {0.8, 0.8, 0.8}, .hIndex = 1.5}};
+Object left_sphere {
+    MS(Sphere)(Point{0.5, -0.7, 0.25}, 0.3),
+    MS(Material)(diffuse({0.3, 0.6, 0.6}) + specular({0.3, 0.3, 0.3}))
+    //MS(Material)(diffuse({0.7, 0.575, 0.8}))
+};
 
-Plane left_plane    {Point{1, 0, 0},  Direction{-1, 0, 0}, Material{.emits = false, .kd = {0.8, 0, 0}}};
-Plane right_plane   {Point{-1, 0, 0}, Direction{1, 0, 0},  Material{.emits = false, .kd = {0, 0.8, 0}}};
-Plane floor_plane   {Point{0, -1, 0}, Direction{0, 1, 0},  Material{.emits = false, .kd = {0.9, 0.9, 0.9}}};
-Plane back_plane    {Point{0, 0, 1},  Direction{0, 0, -1}, Material{.emits = false, .kd = {0.9, 0.9, 0.9}}};
-//Plane back_plane    {Point{0, 0, 1},  Direction{0, 0, -1}, Material{.emits = false, .kd = {0, 0, 0}, .ks = {1, 1, 1}}};
-Plane ceiling_plane {Point{0, 1, 0},  Direction{0, -1, 0}, Material{.emits = true,  .kd = {1, 1, 1}}};
+Object right_sphere {
+    MS(Sphere)(Point{-0.5, -0.7, -0.25}, 0.3),
+    MS(Material)(specular({0.25, 0.25, 0.25}) + refractive({0.8, 0.8, 0.8}, 1.5))
+    //MS(Material)(diffuse({0.5, 0.9, 0.9}))
+};
+
+
+Object left_plane {
+    MS(Plane)(Point{1, 0, 0},  Direction{-1, 0, 0}),
+    MS(Material)(diffuse({0.9, 0, 0}))
+};
+
+Object right_plane {
+    MS(Plane)(Point{-1, 0, 0}, Direction{1, 0, 0}),
+    MS(Material)(diffuse({0, 0.9, 0}))
+};
+
+Object floor_plane {
+    MS(Plane)(Point{0, -1, 0}, Direction{0, 1, 0}),
+    MS(Material)(diffuse({0.9, 0.9, 0.9}))
+};
+
+Object back_plane {
+    MS(Plane)(Point{0, 0, 1},  Direction{0, 0, -1}),
+    MS(Material)(diffuse({0.9, 0.9, 0.9}))
+};
+
+Object ceiling_plane {
+    MS(Plane)(Point{0, 1, 0},  Direction{0, -1, 0}),
+    MS(Material)(emitter({0.9, 0.9, 0.9}))
+    //MS(Material)(diffuse({0.9, 0.9, 0.9}))
+};
 
 PointLight light {{0, 0.5, 0}, {1, 1, 1}};
 
@@ -35,10 +63,8 @@ ObjectSet objects
 {
     {
         left_sphere, right_sphere,
-        right_plane,
-        left_plane,
-        floor_plane,
-        ceiling_plane,
+        right_plane, left_plane,
+        floor_plane, ceiling_plane,
         back_plane
     },
     {
@@ -51,15 +77,11 @@ class Init
 public:
     Init()
     {
-        // objects.push_back(std::cref(blue_ball_1));
-        // objects.push_back
-        // std::cout << "Rendering..." << std::endl;
-        // std::cout << camera << std::endl;
-        // std::cout << (const Sphere&) objects[0].get() << std::endl;
+        
     }
 };
 
 Init init {};
 
-} //namespace cornell_box_1
+} //namespace cornell_box_test
 
