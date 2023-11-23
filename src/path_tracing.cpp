@@ -138,7 +138,7 @@ Color trace(const ObjectSet& objSet, const Ray& ray, Randomizer& random,
 
     const Color indirectLight = trace(objSet, secondaryRay, random, bounces - 1);
 
-    if (k != Material::Component::kd)
+    if (k == Material::Component::kd)
     {
         const Color directLight = castShadowRays(objSet, normal.normal, hit, material.kd());
         return indirectLight * color + directLight;

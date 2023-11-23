@@ -1,18 +1,17 @@
 #pragma once
-
 #include <vector>
 #include <array>
 #include <algorithm>
 #include <cmath>
 
 namespace nn {
-    
+
 namespace {
-    class RandomAccess {
-    public:
-        template<typename T>
-        constexpr auto operator()(const T& t, std::size_t i) const { return t[i]; } 
-    };
+class RandomAccess {
+public:
+    template<typename T>
+    constexpr auto operator()(const T& t, std::size_t i) const { return t[i]; } 
+};
     class RandomAccessTupleFirst {
     public:
         template<typename T>
@@ -21,6 +20,27 @@ namespace {
     template <typename> struct is_tuple: std::false_type {};
     template <typename ...T> struct is_tuple<std::tuple<T...>>: std::true_type {};
 };
+
+template <typename C>
+concept RandomAccessTuple =
+        is_tuple<typename C::value_type>::value &&
+        (std::tuple_size_v<typename C::value_type> > 1) && 
+        std::is_arithmetic_v<std::decay_t<decltype(std::get<0>(std::get<0>(std::declval<typename C::value_type>())))>>;
+
+template <typename C>
+concept OneElementTuple =
+        is_tuple<typename C::value_type>::value && 
+        std::is_arithmetic_v<std::decay_t<decltype(std::get<0>(std::declval<typename C::value_type>()))>>;
+
+template <typename C>
+concept RandomAccessIndexable =
+        is_tuple<typename C::value_type>::value &&
+        (std::tuple_size_v<typename C::value_type> > 1) && 
+        std::is_arithmetic_v<std::decay_t<decltype(std::get<0>(std::declval<typename C::value_type>())[0])>>;
+
+template <typename C>
+concept OneElementIndexable =
+        std::is_arithmetic_v<std::decay_t<decltype(std::declval<typename C::value_type>()[0])>>;
     
 /**
  * T - Data type contained in the KD Tree
@@ -43,67 +63,102 @@ private:
     std::vector<T> elements;
     //Given a node / element in position $i$, its left child is in position 2i+1 and its right child 2i+2
 
-    std::array<real,N>& assign(std::array<real,N>& a, const T& t) const {
-        for (std::size_t i = 0; i<N; ++i) a[i]=axis_position(t,i);
+    std::array<real,N>& assign(std::array<real,N>& a, const T& t) const
+    {
+        for (std::size_t i = 0; i < N; ++i)
+            a[i] = axis_position(t, i);
         return a;
     }
     
-    std::array<real,N>& if_less_assign(std::array<real,N>& a, const T& t) const {
-        for (std::size_t i = 0; i<N; ++i) if (a[i]>axis_position(t,i)) a[i]=axis_position(t,i);
+    std::array<real,N>& if_less_assign(std::array<real,N>& a, const T& t) const
+    {
+        for (std::size_t i = 0; i < N; ++i)
+            if (a[i] > axis_position(t, i))
+                a[i] = axis_position(t, i);
         return a;        
     }
     
-    std::array<real,N>& if_greater_assign(std::array<real,N>& a, const T& t) const {
-        for (std::size_t i = 0; i<N; ++i) if (a[i]<axis_position(t,i)) a[i]=axis_position(t,i);
+    std::array<real,N>& if_greater_assign(std::array<real,N>& a, const T& t) const
+    {
+        for (std::size_t i = 0; i < N; ++i)
+            if (a[i] < axis_position(t, i))
+                a[i] = axis_position(t, i);
         return a;        
     }
     
     template<typename T2>
-    std::array<real,N> difference(const std::array<real,N>& a, const T2& t) const {
+    std::array<real,N> difference(const std::array<real,N>& a, const T2& t) const
+    {
         std::array<real,N> sol;
-        if constexpr (std::is_same_v<T,T2>) {
-            for (std::size_t i = 0; i<N; ++i) sol[i] = (a[i] - axis_position(t,i));
-        } else { //It is an array
-            for (std::size_t i = 0; i<N; ++i) sol[i] = (a[i] - t[i]);
+        if constexpr (std::is_same_v<T,T2>)
+        {
+            for (std::size_t i = 0; i < N; ++i)
+                sol[i] = (a[i] - axis_position(t, i));
+        } else
+        { //It is an array
+            for (std::size_t i = 0; i < N; ++i)
+                sol[i] = (a[i] - t[i]);
         }
         return sol;
     }
     
-    void build_tree(std::size_t left, std::size_t right) {
-        if ((right-left) > 1) {
+    void build_tree(std::size_t left, std::size_t right)
+    {
+        if ((right-left) > 1)
+        {
             //We build the bounding box each subdivision because even if it is slow it leaves a better kdtree balance
             std::array<real,N> bbmin, bbmax;
-            assign(bbmin,elements[left]); assign(bbmax,elements[left]);
-            for (std::size_t i = (left+1); i < right; ++i) {
-                if_less_assign(bbmin,elements[i]);
-                if_greater_assign(bbmax,elements[i]);
+
+            assign(bbmin, elements[left]);
+            assign(bbmax, elements[left]);
+
+            for (std::size_t i = (left + 1); i < right; ++i)
+            {
+                if_less_assign(bbmin, elements[i]);
+                if_greater_assign(bbmax, elements[i]);
             }
+
             std::size_t median = (right+left)/2;
+
             //We find the larger axis
-            std::size_t axis = 0; real max_bound = bbmax[0]-bbmin[0];
-            for (std::size_t i = 1;i<N;++i) if ((bbmax[i]-bbmin[i])>max_bound) {
-                axis = i; max_bound = bbmax[i]-bbmin[i];
+            std::size_t axis = 0;
+            real max_bound = bbmax[0]-  bbmin[0];
+            for (std::size_t i = 1;i < N;++i)
+            {
+                if ((bbmax[i]-bbmin[i]) > max_bound)
+                {
+                    axis = i;
+                    max_bound = bbmax[i] - bbmin[i];
+                }
             }
+
             //Partial ordering over that axis (median contains the median, to the left are smaller, to the right are greater)
-            std::nth_element(elements.begin()+left,elements.begin()+median,elements.begin()+right,
-                [&] (const T& a, const T& b) { return axis_position(a,axis)<axis_position(b,axis); });
+            std::nth_element(elements.begin() + left,elements.begin() + median,elements.begin() + right,
+                [&] (const T& a, const T& b)
+                {
+                    return axis_position(a,axis) < axis_position(b,axis);
+                });
+
             //The median stays in the median, so if in one dimension the vector is ordered (but not the case)
             //We setup the node as well (we just need the axis)
             nodes[median] = axis;
+
             //Recursive calls for the subtrees.
-            build_tree(left,median);
-            build_tree(median+1,right); 
+            build_tree(left, median);
+            build_tree(median + 1, right); 
         }
     }
     
-    void build_tree() {
+    void build_tree()
+    {
         nodes.resize(elements.size());
         build_tree(0,elements.size());
     }
     
     template<typename Norm> //Norm is a norm of a vector (euclidean or any other one, even a weighted one) for std::array<real,N>
     void nearest_neighbors_impl(std::vector<const T*>& values, std::size_t left, std::size_t right, const std::array<real,N>& p, std::size_t number, float& max_distance, const Norm& norm) const {
-        if (right > left) {
+        if (right > left)
+        {
             std::size_t median = (right+left)/2; //Points to the actual node which is always in the median
             auto distance_comparison = [&] (const T* a, const T* b) { return norm(difference(p,*a))<norm(difference(p,*b)); };
             if (norm(difference(p,elements[median]))<max_distance) {
@@ -136,71 +191,162 @@ private:
     }     
     
 public:
-    KDTree(std::vector<T>&& elements, const A& axis_position = A()) : elements(std::move(elements)), axis_position(axis_position) { build_tree(); }
-    KDTree() {}
+    KDTree(std::vector<T>&& elements, const A& axis_position = A())
+        : elements(std::move(elements)), axis_position(axis_position) 
+    { build_tree(); }
+
+    KDTree() = default;
+
     template<typename C> //Constructing from a general collection if possible
-    KDTree(const C& c, const A& axis_position = A(), typename std::enable_if<std::is_same<T,typename C::value_type>::value>::type* sfinae = nullptr) : axis_position(axis_position), elements(c.begin(),c.end()) { build_tree(); }
+    requires std::is_same<T,typename C::value_type>::value
+    KDTree(const C& c, const A& axis_position = A())
+        : axis_position(axis_position), elements(c.begin(),c.end())
+    { build_tree(); }
     
     template<typename Norm>
-    std::vector<const T*> nearest_neighbors(const std::array<real,N>& p, std::size_t number, float max_distance, const Norm& norm) const {
+    std::vector<const T*> nearest_neighbors(const std::array<real,N>& p, std::size_t number, float max_distance, const Norm& norm) const
+    {
         std::vector<const T*> sol;
-        nearest_neighbors_impl(sol,0,elements.size(),p,number,max_distance,norm);
+        nearest_neighbors_impl(sol, 0, elements.size(), p, number, max_distance, norm);
         return sol;
     }
     
-
-    std::vector<const T*> nearest_neighbors(const std::array<real,N>& p, std::size_t number = 1, float max_distance = std::numeric_limits<float>::infinity()) const {
-        return nearest_neighbors(p,number,max_distance,
-            [] (const std::array<real,N>& v) {
-                real s(0); for (real r : v) s+=r*r; return std::sqrt(s);
+    std::vector<const T*> nearest_neighbors(const std::array<real, N>& p,
+            std::size_t number = 1, float max_distance = std::numeric_limits<float>::infinity()) const
+    {
+        return nearest_neighbors(p, number, max_distance,
+            [] (const std::array<real, N>& v)
+            {
+                real s(0);
+                for (real r : v)
+                    s += r * r;
+                return std::sqrt(s);
             });            
     }
 
     template<typename P, typename Norm> //P -> position N dimensional, should have random access
-    std::vector<const T*> nearest_neighbors(const P& p, std::size_t number, float max_distance, const Norm& norm) const {
-        std::array<real,N> p_impl;
-        for (std::size_t i = 0; i<N; ++i) p_impl[i] = p[i];
-        return nearest_neighbors(p_impl,number,max_distance,norm);
+    std::vector<const T*> nearest_neighbors(const P& p, std::size_t number,
+            float max_distance, const Norm& norm) const
+    {
+        std::array<real, N> p_impl;
+        for (std::size_t i = 0; i < N; ++i)
+            p_impl[i] = p[i];
+
+        return nearest_neighbors(p_impl, number, max_distance, norm);
     }
     
     template<typename P> //P -> position N dimensional, should have random access
-    std::vector<const T*> nearest_neighbors(const P& p, std::size_t number = 1, float max_distance = std::numeric_limits<float>::infinity()) const {
-        return nearest_neighbors(p,number,max_distance,
+    std::vector<const T*> nearest_neighbors(const P& p, std::size_t number = 1,
+            float max_distance = std::numeric_limits<float>::infinity()) const
+    {
+        return nearest_neighbors(p,number, max_distance,
             [] (const std::array<real,N>& v) {
-                real s(0); for (real r : v) s+=r*r; return std::sqrt(s);
+                real s(0);
+                for (real r : v)
+                    s += r * r;
+                return std::sqrt(s);
             });            
     }
 };
 
 template<std::size_t N,typename C,typename A>
-auto kdtree(const C& c, const A& ap) { 
+auto kdtree(const C& c, const A& ap)
+{ 
     return KDTree<std::decay_t<typename C::value_type>,N,std::decay_t<A>>(c,ap); 
 } 
 
 
-template<std::size_t N, typename C>
-auto kdtree(const C& c, std::enable_if_t<std::is_arithmetic_v<std::decay_t<decltype(std::declval<typename C::value_type>()[0])>>>* sfinae = nullptr) {   
+template<std::size_t N, OneElementIndexable C>
+auto kdtree(const C& c)
+{
     return kdtree<N>(c,RandomAccess());   
 } 
 
-template<typename C>
-auto kdtree(const C& c, std::enable_if_t<is_tuple<typename C::value_type>::value && 
-            std::is_arithmetic_v<std::decay_t<decltype(std::get<0>(std::declval<typename C::value_type>()))>>>* sfinae = nullptr) {
+template<OneElementTuple C>
+auto kdtree(const C& c)
+{
     return kdtree<std::tuple_size_v<typename C::value_type>>(c);
 }
 
-template<std::size_t N, typename C>
-auto kdtree(const C& c, std::enable_if_t<is_tuple<typename C::value_type>::value &&
-            (std::tuple_size_v<typename C::value_type> > 1) && 
-            std::is_arithmetic_v<std::decay_t<decltype(std::get<0>(std::declval<typename C::value_type>())[0])>>>* sfinae = nullptr) {
+template<std::size_t N, RandomAccessIndexable C>
+auto kdtree(const C& c)
+{
     return kdtree<N>(c, RandomAccessTupleFirst());
 }
 
-template<typename C>
-auto kdtree(const C& c, std::enable_if_t<is_tuple<typename C::value_type>::value &&
-            (std::tuple_size_v<typename C::value_type> > 1) && 
-            std::is_arithmetic_v<std::decay_t<decltype(std::get<0>(std::get<0>(std::declval<typename C::value_type>())))>>>* sfinae = nullptr) {
-    return kdtree<std::tuple_size_v<std::decay_t<decltype(std::get<0>(std::declval<typename C::value_type>()))>>>(c);
+template<RandomAccessTuple C>
+auto kdtree(const C& c)
+{
+    using SubTupleType = std::decay_t<decltype(std::get<0>(std::declval<typename C::value_type>()))>;
+    return kdtree<std::tuple_size_v<SubTupleType>>(c);
 }
 
 }; // namespace nn
+
+
+
+
+
+struct Photon
+{
+    float r, g, b;
+    std::tuple<float, float, float> pos;
+};
+
+
+/* 
+    Your Photon class implementation, which stores each 
+    photon walk interaction 
+*/
+class YourPhoton {
+    std::array<float, 3> position_;    // 3D point of the interaction
+
+public:
+    // It returns the axis i position (x, y or z)
+    float position(std::size_t i) const { return position_[i]; }
+ 
+};
+
+/* 
+    An additional struct that allows the KD-Tree to access your photon position
+*/
+struct PhotonAxisPosition {
+    float operator()(const YourPhoton& p, std::size_t i) const {
+        return p.position(i);
+    }
+};
+
+/* 
+    The KD-Tree ready to work in 3 dimensions, with YourPhoton s, under a 
+    brand-new name: YourPhotonMap 
+*/
+using YourPhotonMap = nn::KDTree<YourPhoton,3,PhotonAxisPosition>;
+
+
+/*
+    Example function to generate the photon map with the given photons
+*/
+YourPhotonMap generation_of_photon_map() {
+    std::vector<YourPhoton> photons = {};        // Create a list of photons
+    YourPhotonMap map {photons, PhotonAxisPosition()};
+    return map;
+}
+
+/*
+    Example method to search for the nearest neighbors of the photon map
+*/
+void search_nearest(YourPhotonMap map, std::array<float, 3> pos){
+    // Position to look for the nearest photons
+    std::array<float, 3> query_position = pos;    
+
+    // Maximum number of photons to look for
+    unsigned long nphotons_estimate = 5;
+
+    // Maximum distance to look for photons
+    float radius_estimate = 2;
+
+    // nearest is the nearest photons returned by the KDTree
+    auto nearest = map.nearest_neighbors(query_position,
+                                         nphotons_estimate,
+                                         radius_estimate);
+}
