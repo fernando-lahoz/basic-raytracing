@@ -1,6 +1,7 @@
 #include "ray_tracing.hpp"
 #include "shapes.hpp"
 #include "geometry.hpp"
+#include "object_set.hpp"
 
 #include <iostream>
 
@@ -31,4 +32,55 @@ Ray Camera::randomRay(Index i, Index j)
     Real x = static_cast<Real>(1 - pixelWidth * j - randomX(gen));
 
     return {o, normalize((x * l) + (y * u) + f)};
+}
+
+Color castShadowRays(const ObjectSet& objSet, const Direction& normal,
+        const Point& hit, const Color& kd)
+{
+    Color color {0, 0, 0};
+    for (const PointLight& light : objSet.pointLights)
+    {
+        const Direction d = light.position() - hit;
+        const Real d2 = dot(d, d);
+        const Real distance = std::sqrt(d2);
+        const Direction dN = d / distance; // normalized d
+        
+        const Direction epsilon = dN * 0.0001;
+
+        const Ray shadowRay {hit + epsilon, dN};
+        auto isThereNearerObject = [&](Real distance) -> bool
+        {
+            for (const Object& obj : objSet.objects)
+            {
+                const auto its = obj.shape().intersect(shadowRay);
+                if (Ray::isHit(its) && its < distance)
+                    return true;
+            }
+            return false;
+        };
+
+        if (isThereNearerObject(distance))
+            continue;
+
+        const Color emission = light.color() / d2;
+        const Real term = std::abs(dot(normal, dN));
+        color = color + (emission * kd / numbers::pi) * term;
+    }
+    return color;
+}
+
+Intersection findIntersection(const ObjectSet& objSet, const Ray& ray)
+{
+    Real t = Ray::nohit;
+    const Object *hitObj = nullptr;
+    for (const Object& obj : objSet.objects)
+    {
+        const auto its = obj.shape().intersect(ray);
+        if (Ray::isHit(its) && (!Ray::isHit(t) || its < t))
+        {
+            t = its;
+            hitObj = &obj;
+        } 
+    }
+    return {t, hitObj};
 }

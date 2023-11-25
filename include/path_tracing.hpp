@@ -12,6 +12,8 @@
 #include <thread>
 #include <vector>
 
+namespace PathTracing {
+
 struct Task
 {
     struct Indices { Index i, j; };
@@ -36,28 +38,37 @@ public:
     bool getNextTask(Task& task);
 };
 
-class PathTracingThreadPool
+Color traceProjection(const ObjectSet& objSet, const Ray& ray, Randomizer&);
+Color traceDirectLight(const ObjectSet& objSet, const Ray& ray, Randomizer&);
+Color traceIndirectLightRecursive(const ObjectSet& objSet, const Ray& ray, Randomizer& random);
+
+using TraceFunction = decltype(traceProjection)*;
+
+enum class Strategy : uint8_t
+{
+    projection,
+    direct,
+    recursive,
+    iterative
+};
+
+class Renderer
 {
 private:
     std::vector<std::thread> threadPool;
     std::thread leader;
     TaskQueue tasks;
     TaskDivider taskDivider;
+    TraceFunction trace;
 public:
     static constexpr Index totalConcurrency = 0;
 
-    PathTracingThreadPool(const Index numWorkers, const Index queueSize,
-            const TaskDivider& divider);
+    Renderer(const Index numWorkers, const Index queueSize,
+            const TaskDivider& divider, Strategy strategy);
 
-    static void leaderRoutine(TaskQueue& tasks, TaskDivider& divider);
+    void render(const Camera& cam, Image& img, const ObjectSet& objects, Index ppp);
 
-    static void workerRoutine(TaskQueue& tasks, const Camera& camera,
-            Image& img, const ObjectSet& objects, Index ppp,
-            TextProgressBar& progressBar);
-
-    void render(const Camera& cam, Image& img,
-            const ObjectSet& objects, Index ppp);
-
-    inline Index numThreads() {return threadPool.size(); }
+    Index numThreads();
 };
 
+} //namespace PathTracing

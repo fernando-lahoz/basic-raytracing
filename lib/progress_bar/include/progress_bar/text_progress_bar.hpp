@@ -16,25 +16,24 @@ private:
 	std::mutex mtx;
 
     const unsigned int barWidth;
-    float progress_ = 0;
-    const float increment_;
+    float progress_;
     std::ostream& os;
-    bool changed = false, end = false;
+    bool changed = false, end = false, clear;
 
     std::thread updater;
 
     void updaterRoutine();
     
 public:
-    TextProgressBar(float _increment);
+    TextProgressBar();
 
     float readProgress();
 
     float awaitChanges();
 
-    void incrementProgress();
+    void incrementProgress(float increment);
 
-    void stop();
+    void stop(bool clear = false);
 
     void launch(bool detach = false);
 

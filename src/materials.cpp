@@ -1,5 +1,7 @@
 #include "materials.hpp"
 
+#include <tuple>
+
 Direction uniformCosineSampling(const Direction& normal, Randomizer& random)
 {
     const Direction ortogonal1 = (std::abs(normal[0]) < 0.1)
@@ -19,7 +21,7 @@ Direction uniformCosineSampling(const Direction& normal, Randomizer& random)
     const Direction rotatedDirection = normal * cosLat 
                                      + ortogonal2 * (sinLat * cosAz)
                                      + ortogonal1 * (sinLat * sinAz);
-    
+
     return rotatedDirection;
 }
 
@@ -39,7 +41,8 @@ Direction perfectSpecularRefraction(const Shape::Normal& normal, const Direction
         return n;
 
     const Real sinIn = std::sin(std::acos(cosOut)) * index;
-    const Real cosIn = std::cos(std::asin(sinIn));
+    const Real in = std::asin(sinIn);
+    const Real cosIn = std::cos(in);
 
     const Direction rotRef = normalize(cross(n, dir));
     const Direction ortogonal2 = cross(rotRef, n);
@@ -70,7 +73,8 @@ Material::Evaluation Material::eval(const Point& hit, const Ray& wIn, Ray& wOut,
     Real x = random();
     if (x <= pd)
     {
-        setWOut(uniformCosineSampling(normal.normal, random));
+        auto dir = uniformCosineSampling(normal.normal, random);
+        setWOut(dir);
         return {_kd / pd, Component::kd};
     }
     else if (x - pd <= ps)

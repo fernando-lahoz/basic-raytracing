@@ -3,16 +3,20 @@
 
 #include <chrono>
 #include <iostream>
+#include <functional>
 
 #include "image.hpp"
 #include "image_writer.hpp"
 #include "path_tracing.hpp"
+#include "photon_mapping.hpp"
 
 #include "program.hpp"
 
+enum class Algorithm {photon_mapping, path_tracing};
+
 static constexpr std::string_view helpStr = R"(
-Usage: ./path_tracer [OTPION...] OUTPUT_FILE
-    
+Usage: ./renderer [OTPION...] OUTPUT_FILE
+
   -d, --dimensions=WIDTH:HEIGTH    Set dimensions of the image.
                                    Default size is 256x256.
 
@@ -30,14 +34,14 @@ Usage: ./path_tracer [OTPION...] OUTPUT_FILE
   -f, --output-format=STRING       Save image with this format.
                                    If not specified, it is deduced
                                    from the file extension.
-                            
+
       Available formats: ppm, bmp
 
   -p, --paths-per-pixel=INT        Set the number of samples per pixel.
                                    Default value is 50.
 
   -t, --task-division=STRING       Array of pixels that compounds a task.
-      
+
       Available divisions: region:WIDTH:HEIGTH, row, column, pixel
 
   -c, --task-concurrency=INT       Set the number of worker threads.
@@ -88,38 +92,57 @@ int main(int argc, char* argv[])
 {
     SET_PROGRAM_NAME(argv);
     usage(argc, argv);
-    const Dimensions dimensions {500, 500}; //-d 500:500
+    const Dimensions dimensions {200, 200}; //-d 500:500
     const Natural resolution = (Natural{1} << 32) - 1; //8bit/16bit/32bit if bmp
-    const Natural ppp = 500; //-ppp 20
+    const Natural ppp = 100; //-ppp 20
     const Dimensions taskDivision {1, 1}; //--task-division=region:10:10/row/column/pixel
     const std::string_view destination = "cornell_box_test.ppm";
     const std::string_view format = "ppm"; //--output-format=bmp
-    const Index taskConcurrency = 0;//PathTracingThreadPool::totalConcurrency; //"--task-concurrency=total"; //1,2...
+    const Index taskConcurrency = 0;//PathTracing::Renderer::totalConcurrency; //"--task-concurrency=total"; //1,2...
     const Index taskQueueSize = 100;//"--task-queue-size=unbounded"; //20,50...
+    const auto pathTracingStrategy = PathTracing::Strategy::recursive;
+    const Algorithm strategy = Algorithm::photon_mapping;
+
+    const Index totalPhotons = 50'000'000;
 
     Camera camera {cam::focus, cam::front, cam::up, dimensions};
     Image img {1, resolution, dimensions};
-
-    PathTracingThreadPool pathTracer {taskConcurrency, taskQueueSize,
-            TaskDivider{dimensions, taskDivision}};
 
     auto writer = makeImageWriter(destination, format);
     if (!writer)
         program::exit(program::err(), "Could not open destination file or format not available.");
     
-    std::cout << "Parallelization level: " << pathTracer.numThreads() << '\n';
-
-    const auto seconds = measure([&]()
+    auto render = [&](std::function<void(void)> renderFunc)
     {
-        pathTracer.render(camera, img, objects, ppp);
-    });
+        const auto seconds = measure(renderFunc);
 
-    std::cout << "Render finished in " << seconds << " s\n";
+        std::cout << "Render finished in " << seconds << " s\n";
 
-    img.updateLuminance();
+        if (!writer->write(img))
+            program::exit(program::err(), "Could not write destination file.");
+    };
 
-    if (!writer->write(img))
-        program::exit(program::err(), "Could not write destination file.");
+    switch (strategy)
+    {
+    case Algorithm::photon_mapping:
+        render([&]()
+        {
+            PhotonMapping::Renderer photonMapper;
+
+            photonMapper.render(camera, img, objects, ppp, totalPhotons);
+        });
+        break;
+    case Algorithm::path_tracing:
+    default:
+        render([&]()
+        {
+            PathTracing::TaskDivider divider {dimensions, taskDivision};
+            PathTracing::Renderer pathTracer {taskConcurrency, taskQueueSize,
+                    divider, pathTracingStrategy};
+
+            pathTracer.render(camera, img, objects, ppp);
+        });
+    }
 
     return 0;
 }

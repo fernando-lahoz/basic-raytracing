@@ -1,7 +1,7 @@
 #include "progress_bar/text_progress_bar.hpp"
 
-TextProgressBar::TextProgressBar(float _increment)
-    : barWidth{70}, increment_{_increment}, os{std::cout}
+TextProgressBar::TextProgressBar()
+    : barWidth{40}, os{std::cout}
 {}
 
 float TextProgressBar::readProgress()
@@ -20,23 +20,26 @@ float TextProgressBar::awaitChanges()
     return end ? -1 : progress_;
 }
 
-void TextProgressBar::incrementProgress()
+void TextProgressBar::incrementProgress(float increment)
 {
     std::unique_lock<std::mutex> lock(mtx);
     changed = true;
-    progress_ += increment_;
+    progress_ += increment;
     waitingChanges.notify_one();
 }
 
-void TextProgressBar::stop()
+void TextProgressBar::stop(bool clear)
 {
     std::unique_lock<std::mutex> lock(mtx);
-    end = true;
+    this->end = true;
+    this->clear = clear;
     waitingChanges.notify_one();
 }
 
 void TextProgressBar::launch(bool detach)
 {
+    progress_ = 0;
+    end = false;
     updater = std::thread{[&](){this->updaterRoutine();}};
     if (detach)
         updater.detach();
@@ -57,12 +60,12 @@ void TextProgressBar::updaterRoutine()
         int mm = timeLeft.minutes().count();
         int ss = timeLeft.seconds().count();
         sprintf(timestring, "%02i:%02i:%02i", hh, mm, ss);
-        os << "[";
+        os << '[';
         unsigned int pos = barWidth * progress;
         for (unsigned int i = 0; i < barWidth; i++) {
-            if (i < pos) os << "=";
-            else if (i == pos) os << ">";
-            else os << " ";
+            if (i < pos) os << '=';
+            else if (i == pos) os << '>';
+            else os << ' ';
         }
         os << "] " << int(progress * 100.0) << " % (" << timestring << ")\r";
         os.flush();
@@ -91,6 +94,17 @@ void TextProgressBar::updaterRoutine()
             timepointPrev = timepoint;
         }
     } while (progress > 0);
+
     printBar(1.0f, FormatedTime{});
-    os << std::endl;
+    if (clear)
+    {
+        for (unsigned int i = 0; i < barWidth + 20; i++)
+            os << ' ';
+        os << '\r';
+        os.flush();
+    }
+    else
+    {
+        os << std::endl;
+    }
 }

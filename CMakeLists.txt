@@ -19,7 +19,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${FullOutputDir}")
 include_directories(include src test)
 
 set(Executables
-    path_tracer
+    renderer
     tone_mapper
 
     test/test_base_inverse_identity
@@ -45,6 +45,7 @@ set(Libraries
     format/bmp
     ray_tracing
     path_tracing
+    photon_mapping
     shapes
     materials
     geometry
