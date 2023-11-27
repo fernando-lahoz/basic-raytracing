@@ -3,8 +3,7 @@
 #include "object_set.hpp"
 #include "ray_tracing.hpp"
 
-#include <iostream>
-#include <array>
+#define MS(Ty) std::make_shared<Ty>
 
 namespace cornell_box_1
 {
@@ -16,18 +15,47 @@ namespace cam
     Direction up {0, 1, 0};
 }
 
-Sphere ball_1 {Point{6, 0, 0},      1,   Material{.emits = false, .kd = Color{1, 0, 0}}};
-Sphere ball_2 {Point{7, -1.2, 0.8}, 0.9, Material{.emits = false, .kd = Color{0, 1, 1}}};
-Sphere ball_3 {Point{5, 0.5, -1.1}, 0.5, Material{.emits = false, .kd = Color{0.6, 0.2, 0.6}}};
 
-Plane wall_background {Point{10, 0, 0}, Direction{-1, 0, 0}, Material{.emits = false, .kd = Color{1, 1, 1}}};
-Plane wall_left  {Point{0, 0, -3}, Direction{0, 0, 1},  Material{.emits = false, .kd = Color{1, 1, 0}}};
-Plane wall_right {Point{0, 0, 3},  Direction{0, 0, -1}, Material{.emits = false, .kd = Color{1, 0, 1}}};
-Plane wall_floor {Point{0, -3, 0}, Direction{0, 1, 0},  Material{.emits = false, .kd = Color{0, 0, 1}}};
+Object ball_1 {
+    MS(Sphere)(Point{6, 0, 0}, 1),
+    MS(Material)(diffuse({0.9, 0, 0}))
+};
 
-Plane wall_roof  {Point{0, 3, 0},  Direction{0, -1, 0}, Material{.emits = false, .kd = Color{0, 1, 0}}};
+Object ball_2 {
+    MS(Sphere)(Point{7, -1.2, 0.8}, 0.9),
+    MS(Material)(diffuse({0, 0.9, 0.9}))
+};
 
-//Disk disk_1 {{-0.3, -0.5, 0.2}, {4.5, -1.2, 0}, 1, {0.01, 0.01, 0.02}};
+Object ball_3 {
+    MS(Sphere)(Point{5, 0.5, -1.1}, 0.5),
+    MS(Material)(diffuse({0.6, 0.2, 0.6}))
+};
+
+
+Object wall_background {
+    MS(Plane)(Point{10, 0, 0},  Direction{-1, 0, 0}),
+    MS(Material)(diffuse({0.9, 0.9, 0.9}))
+};
+
+Object wall_left {
+    MS(Plane)(Point{0, 0, -3},  Direction{0, 0, 1}),
+    MS(Material)(diffuse({0.9, 0.9, 0}))
+};
+
+Object wall_right {
+    MS(Plane)(Point{0, 0, 3},  Direction{0, 0, -1}),
+    MS(Material)(diffuse({0.9, 0, 0.9}))
+};
+
+Object wall_floor {
+    MS(Plane)(Point{0, -3, 0},  Direction{0, 1, 0}),
+    MS(Material)(diffuse({0, 0, 0.9}))
+};
+
+Object wall_roof {
+    MS(Plane)(Point{0, 3, 0},  Direction{0, -1, 0}),
+    MS(Material)(diffuse({0, 0.9, 0}))
+};
 
 PointLight light {{4.5, 2.6, -1}, {1, 1, 1}};
 PointLight light2 {{5.5, -2.6, 2}, {1, 1, 1}};
@@ -50,11 +78,7 @@ class Init
 public:
     Init()
     {
-        // objects.push_back(std::cref(blue_ball_1));
-        // objects.push_back
-        // std::cout << "Rendering..." << std::endl;
-        // std::cout << camera << std::endl;
-        // std::cout << (const Sphere&) objects[0].get() << std::endl;
+
     }
 };
 

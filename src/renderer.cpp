@@ -1,5 +1,5 @@
 #include "scenes/cornell_box_test.ipp"
-//#include "scenes/cornell_box_1.ipp"
+#include "scenes/cornell_box_1.ipp"
 
 #include <chrono>
 #include <iostream>
@@ -76,7 +76,7 @@ auto usage(int argc, char *argv[])
 }
 
 // Change namespace to change the scene
-using namespace cornell_box_test;
+using namespace cornell_box_1;
 
 double measure(auto lambda)
 {
@@ -92,9 +92,9 @@ int main(int argc, char* argv[])
 {
     SET_PROGRAM_NAME(argv);
     usage(argc, argv);
-    const Dimensions dimensions {200, 200}; //-d 500:500
+    const Dimensions dimensions {300, 300}; //-d 500:500
     const Natural resolution = (Natural{1} << 32) - 1; //8bit/16bit/32bit if bmp
-    const Natural ppp = 100; //-ppp 20
+    const Natural ppp = 20; //-ppp 20
     const Dimensions taskDivision {1, 1}; //--task-division=region:10:10/row/column/pixel
     const std::string_view destination = "cornell_box_test.ppm";
     const std::string_view format = "ppm"; //--output-format=bmp
@@ -102,6 +102,8 @@ int main(int argc, char* argv[])
     const Index taskQueueSize = 100;//"--task-queue-size=unbounded"; //20,50...
     const auto pathTracingStrategy = PathTracing::Strategy::recursive;
     const Algorithm strategy = Algorithm::photon_mapping;
+    const bool nextEventEstimation = true;
+    const bool onlyCountSameShapePhotons = false;
 
     const Index totalPhotons = 50'000'000;
 
@@ -127,9 +129,12 @@ int main(int argc, char* argv[])
     case Algorithm::photon_mapping:
         render([&]()
         {
-            PhotonMapping::Renderer photonMapper;
+            PhotonMapping::TaskDivider divider {dimensions, taskDivision};
+            PhotonMapping::Renderer photonMapper {taskConcurrency,
+                    taskQueueSize, divider};
 
-            photonMapper.render(camera, img, objects, ppp, totalPhotons);
+            photonMapper.render(camera, img, objects, ppp, totalPhotons,
+                    nextEventEstimation, onlyCountSameShapePhotons);
         });
         break;
     case Algorithm::path_tracing:

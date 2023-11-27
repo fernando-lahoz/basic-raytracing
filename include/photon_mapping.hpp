@@ -15,6 +15,30 @@
 
 namespace PhotonMapping {
 
+struct Task
+{
+    struct Indices { Index i, j; };
+    Indices start;
+    Indices end;
+};
+
+using TaskQueue = ConcurrentBoundedQueue<Task>;
+
+class TaskDivider
+{
+private:
+    Index i, j;
+public:
+    const Index width, height;
+    const Index regionWidth, regionHeight;
+
+    TaskDivider(Dimensions imageDim, Dimensions regionDim)
+        : i{0}, j{0}, width{imageDim.width}, height{imageDim.height},
+          regionWidth{regionDim.width}, regionHeight{regionDim.height} {}
+
+    bool getNextTask(Task& task);
+};
+
 struct Photon
 {
     Point position;
@@ -35,23 +59,53 @@ struct Photon
     };
 };
 
-using PhotonMap = nn::KDTree<Photon, 3, Photon::KDTreeAccessor>;
+struct SPhoton
+{
+    Point position;
+    Color flux;
+    Real lat, az;
+    const Shape* shape;
 
-//void castPhotonsToScene(const ObjectSet& objSet, const Ray& ray,
-//        PhotonMap& map, Randomizer& random);
-//Color evalSceneLight(...);
+    SPhoton() = default;
+    inline SPhoton(const Point& p, const Color& f,
+            Real theta, Real phi, const Shape* ptr)
+        : position{p}, flux{f}, lat{theta}, az{phi}, shape{ptr}
+    {}
+
+    struct KDTreeAccessor
+    {
+        Real operator()(const SPhoton& photon, Index i) const
+        {
+            return photon.position[i];
+        }
+    };
+};
+
+template <typename PhotonTy>
+using PhotonMap = nn::KDTree<PhotonTy, 3, typename PhotonTy::KDTreeAccessor>;
 
 class Renderer
 {
 private:
+    std::vector<std::thread> threadPool;
+    std::thread leader;
+    TaskQueue tasks;
+    TaskDivider taskDivider;
 
+    template<typename PhotonTy>
+    void renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
+        Index ppp, Index totalPhotons, bool nextEventEstimation);
 public:
     static constexpr Index totalConcurrency = 0;
 
-    Renderer() {}
+    Renderer(const Index numWorkers, const Index queueSize,
+            const TaskDivider& divider);
 
     void render(const Camera& cam, Image& img, const ObjectSet& objects,
-            Index ppp, Index totalPhotons);
+            Index ppp, Index totalPhotons, bool nextEventEstimation,
+            bool onlyCountSameShapePhotons);
+    
+    Index numThreads();
 };
 
 } //namespace PhotonMapping
