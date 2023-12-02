@@ -17,8 +17,8 @@ namespace cam
 
 Object left_sphere {
     MS(Sphere)(Point{0.5, -0.7, 0.25}, 0.3),
-    //MS(Material)(diffuse({0.3, 0.6, 0.6}) + specular({0.3, 0.3, 0.3}))
-    MS(Material)(diffuse({0.7, 0.575, 0.8}))
+    MS(Material)(diffuse({0.3, 0.6, 0.6}) + specular({0.3, 0.3, 0.3}))
+    //MS(Material)(diffuse({0.7, 0.575, 0.8}))
 };
 
 Object right_sphere {

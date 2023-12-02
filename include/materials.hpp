@@ -36,7 +36,7 @@ public:
     };
 
     Material::Evaluation eval(const Point& hit, const Ray& wIn, Ray& wOut,
-        const Shape::Normal& normal, Randomizer& random) const;
+            const Shape::Normal& normal, Randomizer& random) const;
 
     struct Emission
     {
@@ -48,6 +48,24 @@ public:
     {
         return {emits, _kd};
     }
+
+    struct Sample
+    {
+        Ray ray;
+        Component comp;
+    };
+
+    Sample sample(const Point& hit, const Ray& wIn,
+            const Shape::Normal& normal, Randomizer& random) const;
+
+    struct SampleAll
+    {
+        Ray rd, rs, rt;
+        Real pd, ps, pt;
+    };
+
+    SampleAll sampleAll(const Point& hit, const Ray& wIn,
+            const Shape::Normal& normal, Randomizer& random) const;
 };
 
 #include "inline/materials.ipp"

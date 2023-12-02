@@ -90,3 +90,55 @@ Material::Evaluation Material::eval(const Point& hit, const Ray& wIn, Ray& wOut,
 
     return {Color{}, Component::ka};
 }
+
+Material::Sample Material::sample(const Point& hit, const Ray& wIn,
+        const Shape::Normal& normal, Randomizer& random) const
+{
+    // Russian Roulette
+    Real pd = _kd.luminance(), ps = _ks.luminance(), pt = _kt.luminance();
+    
+    const Real sum = pd + ps + pt;
+    pd /= sum; ps /= sum; pt /= sum;
+
+    auto setWOut = [&](const Direction& dir) -> Ray
+    {
+        return {hit + dir * 0.0001, dir};
+    };
+
+    Real x = random();
+    if (x <= pd)
+    {
+        auto dir = uniformCosineSampling(normal.normal, random);
+        return {setWOut(dir), Component::kd};
+    }
+    else if (x - pd <= ps)
+    {
+        auto dir = perfectSpecularReflexion(normal.normal, wIn.d);
+        return {setWOut(dir), Component::ks};
+    }
+    else
+    {
+        auto dir = perfectSpecularRefraction(normal, wIn.d, index);
+        return {setWOut(dir), Component::kt};
+    }
+}
+
+Material::SampleAll Material::sampleAll(const Point& hit, const Ray& wIn,
+        const Shape::Normal& normal, Randomizer& random) const
+{
+    SampleAll res;
+    const Real pd = _kd.luminance(), ps = _ks.luminance(), pt = _kt.luminance();
+    const Real sum = pd + ps + pt;
+    res.pd = pd / sum; res.ps = ps / sum; res.pt = pt / sum;
+
+    auto setWOut = [&](const Direction& dir) -> Ray
+    {
+        return {hit + dir * 0.0001, dir};
+    };
+
+    res.rd = setWOut(uniformCosineSampling(normal.normal, random));
+    res.rs = setWOut(perfectSpecularReflexion(normal.normal, wIn.d));
+    res.rt = setWOut(perfectSpecularRefraction(normal, wIn.d, index));
+
+    return res;
+}

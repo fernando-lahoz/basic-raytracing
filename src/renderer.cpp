@@ -76,7 +76,7 @@ auto usage(int argc, char *argv[])
 }
 
 // Change namespace to change the scene
-using namespace cornell_box_1;
+using namespace cornell_box_test;
 
 double measure(auto lambda)
 {
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
     usage(argc, argv);
     const Dimensions dimensions {300, 300}; //-d 500:500
     const Natural resolution = (Natural{1} << 32) - 1; //8bit/16bit/32bit if bmp
-    const Natural ppp = 20; //-ppp 20
+    const Natural ppp = 10; //-ppp 20
     const Dimensions taskDivision {1, 1}; //--task-division=region:10:10/row/column/pixel
     const std::string_view destination = "cornell_box_test.ppm";
     const std::string_view format = "ppm"; //--output-format=bmp
@@ -102,10 +102,10 @@ int main(int argc, char* argv[])
     const Index taskQueueSize = 100;//"--task-queue-size=unbounded"; //20,50...
     const auto pathTracingStrategy = PathTracing::Strategy::recursive;
     const Algorithm strategy = Algorithm::photon_mapping;
-    const bool nextEventEstimation = true;
+    const bool nextEventEstimation = false;
     const bool onlyCountSameShapePhotons = false;
 
-    const Index totalPhotons = 50'000'000;
+    const Index totalPhotons = 100'000;
 
     Camera camera {cam::focus, cam::front, cam::up, dimensions};
     Image img {1, resolution, dimensions};

@@ -74,35 +74,35 @@ void castPhotonToScene(const ObjectSet& objSet, const Ray& ray,
 
     switch(k)
     {
-        case Material::Component::ka:
-            break; // don't save and leave
-        case Material::Component::ks:
-        case Material::Component::kt:
-            castPhotonToScene<PhotonTy>(objSet, secondaryRay, photon,
-                    photonRegister, random, total, mapped, true);
-            break;
-        case Material::Component::kd:
-            if (save)
-            {
-                Real lat = std::acos(ray.d[0]);
-                if (ray.d[2] < 0)
-                    lat = -lat;
+    case Material::Component::ka:
+        break; // don't save and leave
+    case Material::Component::ks:
+    case Material::Component::kt:
+        castPhotonToScene<PhotonTy>(objSet, secondaryRay, photon,
+                photonRegister, random, total, mapped, true);
+        break;
+    case Material::Component::kd:
+        if (save)
+        {
+            Real lat = std::acos(ray.d[0]);
+            if (ray.d[2] < 0)
+                lat = -lat;
 
-                Real az = std::acos(ray.d[1] / std::sin(lat));
-                if (ray.d[0] < 0)
-                    az = -az;
-                
-                if constexpr (std::same_as<PhotonTy, SPhoton>)
-                    photonRegister.emplace_back(hit, photon.flux * color, lat, az, &shape);
-                else
-                    photonRegister.emplace_back(hit, photon.flux * color, lat, az);
-                mapped++; // SOLO CUENTA SI SE GUARDA???
-            }
+            Real az = std::acos(ray.d[1] / std::sin(lat));
+            if (ray.d[0] < 0)
+                az = -az;
+            
+            if constexpr (std::same_as<PhotonTy, SPhoton>)
+                photonRegister.emplace_back(hit, photon.flux * color, lat, az, &shape);
+            else
+                photonRegister.emplace_back(hit, photon.flux * color, lat, az);
+            mapped++;
+        }
 
-            photon.flux = photon.flux * color;
-            castPhotonToScene<PhotonTy>(objSet, secondaryRay, photon, photonRegister,
-                    random, total, mapped, true);
-            break;
+        photon.flux = photon.flux * color;
+        castPhotonToScene<PhotonTy>(objSet, secondaryRay, photon, photonRegister,
+                random, total, mapped, true);
+        break;
     }
 }
 
@@ -129,67 +129,115 @@ Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
     // Ray secondaryRay;
     // const auto [color, k] = material.eval<false>(hit, ray, secondaryRay, normal, random);
 
-    const Real radius = 0.05;
-    const Index photons = 10000;
-    auto nearest = map.nearest_neighbors(hit, photons, radius); // Preguntar por estos valores
-
-    // uniform kernel
 #if 1
-    Color sum;
-    Index count = 0;
-    for (const PhotonTy* photon : nearest)
-    {
-        if constexpr (std::same_as<PhotonTy, SPhoton>)
-            if (photon->shape != &shape) // Only sum photons on the same object
-                continue;
+    const auto [rd, rs, rt, pd, ps, pt] = material.sampleAll(hit, ray, normal, random);
 
-        sum = sum + photon->flux * material.kd(); //divide by pi ^2??
-        count++;
+    if (normal.side == Shape::Side::in) //parche imperfecto
+    {
+        return castRayToScene<PhotonTy>(objSet, rt, map, random, nextEvent);
     }
-    sum = sum / (radius * radius * numbers::pi * numbers::pi);// * (nearest.size() / count);
+
+    Color cd, cs, ct;
+    if (ps > 0.001)
+        cs = castRayToScene<PhotonTy>(objSet, rs, map, random, nextEvent);
+    if (pt > 0.001)
+        ct = castRayToScene<PhotonTy>(objSet, rt, map, random, nextEvent);
+
+    if (pd > 0.001)
+    {
+        const Real radius = 0.4;
+        const Index photons = 1000;
+        auto nearest = map.nearest_neighbors(hit, photons, radius); // Preguntar por estos valores
+        Index count = 0;
+        for (const PhotonTy* photon : nearest)
+        {
+            if constexpr (std::same_as<PhotonTy, SPhoton>)
+                if (photon->shape != &shape) // Only sum photons on the same object
+                    continue;
+
+            cd = cd + photon->flux * material.kd();
+            count++;
+        }
+        cd = cd / (radius * radius * numbers::pi * numbers::pi);
+    }
+    
+    return (cd * pd) + (cs * ps) + (ct * pt);
+
+#else
+    const auto [secondaryRay, k] = material.sample(hit, ray, normal, random);
+
+    switch (k)
+    {
+    case Material::Component::ks:
+    case Material::Component::kt:
+        return castRayToScene<PhotonTy>(objSet, secondaryRay, map, random, nextEvent);
+    case Material::Component::ka:
+    case Material::Component::kd:
+
+        const Real radius = 0.4;
+        const Index photons = 1000;
+        auto nearest = map.nearest_neighbors(hit, photons, radius); // Preguntar por estos valores
+
+        // uniform kernel
+#if 1
+        Color sum;
+        Index count = 0;
+        for (const PhotonTy* photon : nearest)
+        {
+            if constexpr (std::same_as<PhotonTy, SPhoton>)
+                if (photon->shape != &shape) // Only sum photons on the same object
+                    continue;
+
+            sum = sum + photon->flux * material.kd();
+            count++;
+        }
+        sum = sum / (radius * radius * numbers::pi * numbers::pi);// * (nearest.size() / count);
 #elif 0
-    // cone kernel
-    Color sum;
-    Index count = 0;
-    for (const PhotonTy* photon : nearest)
-    {
-        if constexpr (std::same_as<PhotonTy, SPhoton>)
-            if (photon->shape != &shape) // Only sum photons on the same object
-                continue;
+        // cone kernel
+        Color sum;
+        Index count = 0;
+        for (const PhotonTy* photon : nearest)
+        {
+            if constexpr (std::same_as<PhotonTy, SPhoton>)
+                if (photon->shape != &shape) // Only sum photons on the same object
+                    continue;
 
-        const Real r = norm(hit - photon->position);
-        sum = sum + photon->flux * material.kd() * (r / radius); //divide by pi ^2??
-        count++;
-    }
-    sum = sum / (radius * radius * numbers::pi * numbers::pi);// * (nearest.size() / count);
+            const Real r = norm(hit - photon->position);
+            sum = sum + photon->flux * material.kd() * (r / radius); //divide by pi ^2??
+            count++;
+        }
+        sum = sum / (radius * radius * numbers::pi * numbers::pi);// * (nearest.size() / count);
 
 #elif 1
-    // gaussian kernel
+        // gaussian kernel
 
-    const Real var = 1;
-    const Real mean = 0.5 * radius; // mitad de radio
+        const Real var = 1;
+        const Real mean = 0.5 * radius; // mitad de radio
 
-    Color sum;
-    Index count = 0;
-    for (const PhotonTy* photon : nearest)
-    {
-        if constexpr (std::same_as<PhotonTy, SPhoton>)
-            if (photon->shape != &shape) // Only sum photons on the same object
-                continue;
+        Color sum;
+        Index count = 0;
+        for (const PhotonTy* photon : nearest)
+        {
+            if constexpr (std::same_as<PhotonTy, SPhoton>)
+                if (photon->shape != &shape) // Only sum photons on the same object
+                    continue;
 
-        const Real r = norm(hit - photon->position);
-        const Real gaussian = std::exp((r - mean) * (r - mean) / (var * 2)) / (std::sqrt(2 * std::numbers::pi * var));
-        sum = sum + photon->flux * material.kd() * gaussian; //divide by pi ^2??
-        count++;
-    }
-    sum = (sum + count * Color{-mean, -mean, -mean}) / (radius * radius * numbers::pi * numbers::pi * var);// * (nearest.size() / count);
+            const Real r = norm(hit - photon->position);
+            const Real gaussian = std::exp((r - mean) * (r - mean) / (var * 2)) / (std::sqrt(2 * std::numbers::pi * var));
+            sum = sum + photon->flux * material.kd() * gaussian; //divide by pi ^2??
+            count++;
+        }
+        sum = (sum + count * Color{-mean, -mean, -mean}) / (radius * radius * numbers::pi * numbers::pi * var);// * (nearest.size() / count);
 
 #endif
 
-    if (nextEvent) 
-        return sum + castShadowRays(objSet, normal.normal, hit, material.kd());
-    
-    return sum;
+        if (nextEvent) 
+            return sum + castShadowRays(objSet, normal.normal, hit, material.kd());
+        
+        return sum;
+    }
+#endif
+    return Color{}; //No debería llegar aquí
 }
 
 template<typename PhotonTy>
@@ -303,15 +351,12 @@ renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
                                   sinLat * std::cos(photon.az)};
             
             Ray ray {light.position(), dir};
-            Index preMapped = mapped;
+            Real preMapped = mapped;
             castPhotonToScene<PhotonTy>(objects, ray, photon, lightRegister,
                     random, numPhotons, mapped, !nextEventEstimation);
 
-            if (preMapped < mapped)
-            {
-                casted++;
-                progressBar.incrementProgress(Real(mapped - preMapped) / totalPhotons);
-            }
+            casted++;
+            progressBar.incrementProgress(Real(mapped - preMapped) / totalPhotons);
         }
 
         // Maybe this is fine   ???
