@@ -92,20 +92,23 @@ int main(int argc, char* argv[])
 {
     SET_PROGRAM_NAME(argv);
     usage(argc, argv);
-    const Dimensions dimensions {300, 300}; //-d 500:500
+    const Dimensions dimensions {1000, 1000}; //-d 500:500
     const Natural resolution = (Natural{1} << 32) - 1; //8bit/16bit/32bit if bmp
     const Natural ppp = 10; //-ppp 20
     const Dimensions taskDivision {1, 1}; //--task-division=region:10:10/row/column/pixel
     const std::string_view destination = "cornell_box_test.ppm";
     const std::string_view format = "ppm"; //--output-format=bmp
-    const Index taskConcurrency = 0;//PathTracing::Renderer::totalConcurrency; //"--task-concurrency=total"; //1,2...
+    const Index taskConcurrency = 4;//PathTracing::Renderer::totalConcurrency; //"--task-concurrency=total"; //1,2...
     const Index taskQueueSize = 100;//"--task-queue-size=unbounded"; //20,50...
     const auto pathTracingStrategy = PathTracing::Strategy::recursive;
     const Algorithm strategy = Algorithm::photon_mapping;
     const bool nextEventEstimation = false;
     const bool onlyCountSameShapePhotons = false;
+    const Real evalRadius = 0.05;
+    const Index evalNumPhotons = 10000;
 
-    const Index totalPhotons = 100'000;
+    //const Index totalPhotons = 50'000'000;
+    const Index totalPhotons = 5'000'000;
 
     Camera camera {cam::focus, cam::front, cam::up, dimensions};
     Image img {1, resolution, dimensions};
@@ -134,7 +137,8 @@ int main(int argc, char* argv[])
                     taskQueueSize, divider};
 
             photonMapper.render(camera, img, objects, ppp, totalPhotons,
-                    nextEventEstimation, onlyCountSameShapePhotons);
+                    evalRadius, evalNumPhotons, nextEventEstimation,
+                    onlyCountSameShapePhotons);
         });
         break;
     case Algorithm::path_tracing:

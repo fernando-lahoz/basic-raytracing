@@ -94,7 +94,8 @@ private:
 
     template<typename PhotonTy>
     void renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
-        Index ppp, Index totalPhotons, bool nextEventEstimation);
+            Index ppp, Index totalPhotons, Real evalRadius, Index evalNumPhotons,
+            bool nextEventEstimation);
 public:
     static constexpr Index totalConcurrency = 0;
 
@@ -102,7 +103,8 @@ public:
             const TaskDivider& divider);
 
     void render(const Camera& cam, Image& img, const ObjectSet& objects,
-            Index ppp, Index totalPhotons, bool nextEventEstimation,
+            Index ppp, Index totalPhotons, Real evalRadius,
+            Index evalNumPhotons, bool nextEventEstimation,
             bool onlyCountSameShapePhotons);
     
     Index numThreads();

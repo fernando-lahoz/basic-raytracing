@@ -108,7 +108,7 @@ void castPhotonToScene(const ObjectSet& objSet, const Ray& ray,
 
 template<typename PhotonTy>
 Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
-        const PhotonMap<PhotonTy>& map, Randomizer& random, bool nextEvent)
+        const PhotonMap<PhotonTy>& map, Randomizer& random, Real radius, Index numPhotons, bool nextEvent)
 {
     const auto [t, hitObj] = findIntersection(objSet, ray);
 
@@ -126,123 +126,58 @@ Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
     const auto hit = ray.hitPoint(t);
     const auto normal = shape.normal(ray.d, hit);
 
-    // Ray secondaryRay;
-    // const auto [color, k] = material.eval<false>(hit, ray, secondaryRay, normal, random);
-
-#if 1
     const auto [rd, rs, rt, pd, ps, pt] = material.sampleAll(hit, ray, normal, random);
 
     if (normal.side == Shape::Side::in) //parche imperfecto
     {
-        return castRayToScene<PhotonTy>(objSet, rt, map, random, nextEvent);
+        return castRayToScene<PhotonTy>(objSet, rt, map, random, radius, numPhotons, nextEvent);
     }
 
     Color cd, cs, ct;
     if (ps > 0.001)
-        cs = castRayToScene<PhotonTy>(objSet, rs, map, random, nextEvent);
+        cs = castRayToScene<PhotonTy>(objSet, rs, map, random, radius, numPhotons, nextEvent);
     if (pt > 0.001)
-        ct = castRayToScene<PhotonTy>(objSet, rt, map, random, nextEvent);
+        ct = castRayToScene<PhotonTy>(objSet, rt, map, random, radius, numPhotons, nextEvent);
 
     if (pd > 0.001)
     {
-        const Real radius = 0.4;
-        const Index photons = 1000;
-        auto nearest = map.nearest_neighbors(hit, photons, radius); // Preguntar por estos valores
+        auto nearest = map.nearest_neighbors(hit, numPhotons, radius);
         Index count = 0;
         for (const PhotonTy* photon : nearest)
         {
             if constexpr (std::same_as<PhotonTy, SPhoton>)
-                if (photon->shape != &shape) // Only sum photons on the same object
+                if (photon->shape != &shape)
                     continue;
-
+#if 0
+//UNIFORM KERNEL
             cd = cd + photon->flux * material.kd();
             count++;
         }
         cd = cd / (radius * radius * numbers::pi * numbers::pi);
+#elif 1
+//CONE KERNEL
+
+            const Real r = norm(hit - photon->position);
+            cd = cd + photon->flux * material.kd() / (r * r);
+            count++;
+        }
+        cd = cd / (numbers::pi * numbers::pi);// * (nearest.size() / count);
+
+#elif 1
+//GAUSSIAN KERNEL
+
+
+#endif
+        if (nextEvent) 
+            cd = cd + castShadowRays(objSet, normal.normal, hit, material.kd());
     }
     
     return (cd * pd) + (cs * ps) + (ct * pt);
-
-#else
-    const auto [secondaryRay, k] = material.sample(hit, ray, normal, random);
-
-    switch (k)
-    {
-    case Material::Component::ks:
-    case Material::Component::kt:
-        return castRayToScene<PhotonTy>(objSet, secondaryRay, map, random, nextEvent);
-    case Material::Component::ka:
-    case Material::Component::kd:
-
-        const Real radius = 0.4;
-        const Index photons = 1000;
-        auto nearest = map.nearest_neighbors(hit, photons, radius); // Preguntar por estos valores
-
-        // uniform kernel
-#if 1
-        Color sum;
-        Index count = 0;
-        for (const PhotonTy* photon : nearest)
-        {
-            if constexpr (std::same_as<PhotonTy, SPhoton>)
-                if (photon->shape != &shape) // Only sum photons on the same object
-                    continue;
-
-            sum = sum + photon->flux * material.kd();
-            count++;
-        }
-        sum = sum / (radius * radius * numbers::pi * numbers::pi);// * (nearest.size() / count);
-#elif 0
-        // cone kernel
-        Color sum;
-        Index count = 0;
-        for (const PhotonTy* photon : nearest)
-        {
-            if constexpr (std::same_as<PhotonTy, SPhoton>)
-                if (photon->shape != &shape) // Only sum photons on the same object
-                    continue;
-
-            const Real r = norm(hit - photon->position);
-            sum = sum + photon->flux * material.kd() * (r / radius); //divide by pi ^2??
-            count++;
-        }
-        sum = sum / (radius * radius * numbers::pi * numbers::pi);// * (nearest.size() / count);
-
-#elif 1
-        // gaussian kernel
-
-        const Real var = 1;
-        const Real mean = 0.5 * radius; // mitad de radio
-
-        Color sum;
-        Index count = 0;
-        for (const PhotonTy* photon : nearest)
-        {
-            if constexpr (std::same_as<PhotonTy, SPhoton>)
-                if (photon->shape != &shape) // Only sum photons on the same object
-                    continue;
-
-            const Real r = norm(hit - photon->position);
-            const Real gaussian = std::exp((r - mean) * (r - mean) / (var * 2)) / (std::sqrt(2 * std::numbers::pi * var));
-            sum = sum + photon->flux * material.kd() * gaussian; //divide by pi ^2??
-            count++;
-        }
-        sum = (sum + count * Color{-mean, -mean, -mean}) / (radius * radius * numbers::pi * numbers::pi * var);// * (nearest.size() / count);
-
-#endif
-
-        if (nextEvent) 
-            return sum + castShadowRays(objSet, normal.normal, hit, material.kd());
-        
-        return sum;
-    }
-#endif
-    return Color{}; //No debería llegar aquí
 }
 
 template<typename PhotonTy>
 void workerRoutine(TaskQueue& tasks, Real increment, const Camera& camera,
-        Image& img, const ObjectSet& objects, Index ppp,
+        Image& img, const ObjectSet& objects, Index ppp, Real radius, Index numPhotons,
         const PhotonMap<PhotonTy>& map, TextProgressBar& progressBar,
         bool nextEvent)
 {
@@ -260,7 +195,8 @@ void workerRoutine(TaskQueue& tasks, Real increment, const Camera& camera,
             {
                 Ray ray = cam.randomRay(i, j);
                 meanColor = meanColor
-                          + castRayToScene<PhotonTy>(objects, ray, map, random, nextEvent);
+                          + castRayToScene<PhotonTy>(objects, ray, map, random,
+                                                     radius, numPhotons, nextEvent);
             }
             // Thread-safe operation: a pixel is not assigned to two different threads 
             img(i, j) = RGBPixel (meanColor / ppp);
@@ -310,7 +246,7 @@ std::vector<Index> dividePhotonsByPower(const ObjectSet& objSet, Index total)
 template<typename PhotonTy>
 void PhotonMapping::Renderer::
 renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
-        Index ppp, Index totalPhotons, bool nextEventEstimation)
+        Index ppp, Index totalPhotons, Real evalRadius, Index evalNumPhotons, bool nextEventEstimation)
 {
     constexpr std::string_view jump_to_previous_line = "\033[F";
 
@@ -396,7 +332,8 @@ renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
     {
         worker = std::thread(workerRoutine<PhotonTy>, std::ref(tasks), increment,
                 std::cref(cam), std::ref(img), std::cref(objects), ppp,
-                std::cref(map), std::ref(progressBar), nextEventEstimation);
+                evalRadius, evalNumPhotons, std::cref(map),
+                std::ref(progressBar), nextEventEstimation);
     }
 
     leader.join();
@@ -416,17 +353,17 @@ renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
 
 void PhotonMapping::Renderer::
 render(const Camera& cam, Image& img, const ObjectSet& objects,
-        Index ppp, Index totalPhotons, bool nextEventEstimation,
+        Index ppp, Index totalPhotons, Real evalRadius, Index evalNumPhotons, bool nextEventEstimation,
         bool onlyCountSameShapePhotons)
 {
     if (onlyCountSameShapePhotons)
     {
         renderSpecialized<SPhoton>(cam, img, objects,
-                ppp, totalPhotons, nextEventEstimation);
+                ppp, totalPhotons, evalRadius, evalNumPhotons, nextEventEstimation);
     }
     else
     {
         renderSpecialized<Photon>(cam, img, objects,
-                ppp, totalPhotons, nextEventEstimation);
+                ppp, totalPhotons, evalRadius, evalNumPhotons, nextEventEstimation);
     }
 }
