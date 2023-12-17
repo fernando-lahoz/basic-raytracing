@@ -44,14 +44,14 @@ Run with `--help` for additional information of usage.
            --output-format=bmp \
            output_image.bmp
 
-./bin/tone_mapper.exe --strategy=gm:2.2 output_image.bmp output_image_mapped.bmp
+./bin/tone_mapper --strategy=gm:2.2 output_image.bmp output_image_mapped.bmp
 ```
 
 ```powershell
 # Windows powershell
 chcp 65001; ./bin/renderer --algorithm=photon-mapping --paths-per-pixel=10 --photon-mapping-use-next-event-estimation --photon-mapping-evaluation-radius=0.4 --photon-mapping-evaluation-photons=1000 --photon-mapping-total-saved-photons=100000 --dimensions=256:256 --color-resolution=32bit --output-format=bmp output_image.bmp
 
-./bin/tone_mapper.exe --strategy=gm:2.2 output_image.bmp output_image_mapped.bmp
+./bin/tone_mapper --strategy=gm:2.2 output_image.bmp output_image_mapped.bmp
 ```
 
 ### Path Tracing
@@ -66,12 +66,12 @@ chcp 65001; ./bin/renderer --algorithm=photon-mapping --paths-per-pixel=10 --pho
            --output-format=bmp \
            output_image.bmp
 
-./bin/tone_mapper.exe --strategy=gm:2.2 output_image.bmp output_image_mapped.bmp
+./bin/tone_mapper --strategy=gm:2.2 output_image.bmp output_image_mapped.bmp
 ```
 
 ```powershell
 # Windows powershell
 chcp 65001; ./bin/renderer --algorithm=path-tracing --paths-per-pixel=100 --dimensions=256:256 --color-resolution=32bit --output-format=bmp output_image.bmp
 
-./bin/tone_mapper.exe --strategy=gm:2.2 output_image.bmp output_image_mapped.bmp
+./bin/tone_mapper --strategy=gm:2.2 output_image.bmp output_image_mapped.bmp
 ```
