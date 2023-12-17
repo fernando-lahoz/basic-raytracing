@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iostream>
 #include <functional>
+#include <initializer_list>
 
 #include "image.hpp"
 #include "image_writer.hpp"
@@ -20,7 +21,7 @@ Usage: ./renderer [OTPION...] OUTPUT_FILE
   -d, --dimensions=WIDTH:HEIGTH    Set dimensions of the image.
                                    Default size is 256x256.
 
-  -r, --resolution=INT             Set range of natural values each
+  -r, --color-resolution=INT       Set range of natural values each
                                    RGB component has to be stored.
                                    Default resolution is 8 bits (LDR).
 
@@ -52,7 +53,222 @@ Usage: ./renderer [OTPION...] OUTPUT_FILE
 
   -q, --task-queue-size=INT        Set the number of entries of the
                                    task queue. Default size is 100.
+
+    **NO ESTÁ COMPLETA
 )";
+
+struct RawArguments
+{
+    using Arg = std::string_view;
+    // Output image
+    Arg dimensions;       // -d INT:INT
+    Arg color_resolution; // -c INT | 8bit | 16bit | 32bit
+    Arg destination_file;
+    Arg output_format;    // -f STR
+
+    // Parallelization
+    Arg task_division;    // -D INT:INT | row | column | pixel
+    Arg task_concurrency; // -C INT | total | none
+    Arg task_queue_size;  // -Q INT
+    
+    // Render algorithm
+    Arg algorithm; // -a path-tracing | pt | photon-mapping | pm
+
+    // Path tracing parameters
+    Arg paths_per_pixel;       // -p INT
+    Arg path_tracing_strategy; // -s trace-projection | trace-direct-light | recursive | iterative
+    
+    // Photon mapping parameters
+    Arg photon_mapping_use_next_event_estimation; // -N [BOOL]
+    Arg photon_mapping_exclusive_evaluation;      // -E [BOOL]
+    Arg photon_mapping_use_russian_roulette;      // -R [BOOL]
+    Arg photon_mapping_evaluation_radius;         // -r REAL
+    Arg photon_mapping_evaluation_photons;        // -e INT
+    Arg photon_mapping_total_saved_photons;       // -t INT
+};
+
+struct Arguments
+{
+    // Output image
+    Dimensions dimensions = {256, 256};
+    Natural color_resolution = 255;
+    std::string_view destination_file;
+    std::string_view output_format;
+
+    // Parallelization
+    Dimensions task_division = {10, 10};
+    Index task_concurrency = 0; // total
+    Index task_queue_size = 100;
+    
+    // Render algorithm
+    Algorithm algorithm = Algorithm::path_tracing;
+
+    // Path tracing parameters
+    Natural paths_per_pixel = 100; // Depends on algorithm: pt -> 100 / pm -> 10
+    PathTracing::Strategy path_tracing_strategy;
+    
+    // Photon mapping parameters
+    bool photon_mapping_use_next_event_estimation = false;
+    bool photon_mapping_exclusive_evaluation = false;
+    bool photon_mapping_use_russian_roulette = false;
+    Real photon_mapping_evaluation_radius = 0.4;
+    Index photon_mapping_evaluation_photons = 10'000; // all
+    Index photon_mapping_total_saved_photons = 10'000;
+};
+
+Arguments processArgs(const RawArguments& raw)
+{
+    auto readNumber = []<typename Ty> (std::string_view num, Ty& value) 
+    {
+        Ty temp;
+        const char* begin = num.data(), *end = num.data() + num.length();
+        auto res = std::from_chars(begin, end, temp);
+        if (res.ec == std::errc{}) {
+            value = temp;
+            return true;
+        }
+        return false;
+    };
+
+    auto checkDimensions = [readNumber](std::string_view str, Dimensions& dim) -> bool
+    {
+        auto getNum = [readNumber](std::string_view str, Index& value) -> std::pair<bool, Index>
+        {
+            auto dots = str.find_first_of(':');
+            auto num = str.substr(0, dots - 1);
+            if (num.empty())
+                return {false, dots};
+            return {readNumber(num, value), dots};
+        };
+
+        const auto[ok, dots] = getNum(str, dim.width);
+        if (ok) return getNum({str.data() + dots, str.size()}, dim.width).first;
+        else    return false;
+    };
+
+    auto set = [](std::string_view arg) { return !arg.empty(); };
+
+    auto oneOf = [](std::string_view arg, std::initializer_list<std::string_view> list)
+    {
+        for (auto s : list)
+            if (arg == s)
+                return true;
+        return false;
+    };
+
+    Arguments args;
+    args.destination_file = raw.destination_file;
+    args.output_format = raw.output_format;
+
+    if (set(raw.dimensions) && !checkDimensions(raw.dimensions, args.dimensions))
+        program::exit(program::err(), "Invalid image dimensions.");
+    
+    if (set(raw.color_resolution)) {
+        if (oneOf(raw.color_resolution, {"8bit"}))
+            args.color_resolution = std::numeric_limits<uint8_t>::max();
+        else if (oneOf(raw.color_resolution, {"16bit"}))
+            args.color_resolution = std::numeric_limits<uint16_t>::max();
+        else if (oneOf(raw.color_resolution, {"32bit"}))
+            args.color_resolution = std::numeric_limits<uint32_t>::max();
+        else if (!readNumber(raw.color_resolution, args.color_resolution))
+            program::exit(program::err(), "Invalid color resolution.");
+    }
+
+    if (set(raw.task_division)) {
+        if (oneOf(raw.task_division, {"row"}))
+            args.task_division = Dimensions{args.dimensions.width, 1};
+        else if (oneOf(raw.task_division, {"column"}))
+            args.task_division = Dimensions{1, args.dimensions.height};
+        else if (oneOf(raw.task_division, {"pixel"}))
+            args.task_division = Dimensions{1, 1};
+        else if (!checkDimensions(raw.task_division, args.task_division))
+            program::exit(program::err(), "Invalid task division.");
+    }
+
+    if (set(raw.task_concurrency)) {
+        if (oneOf(raw.task_concurrency, {"total", "max"}))
+            args.task_concurrency = 0;
+        else if (oneOf(raw.task_division, {"none"}))
+            args.task_concurrency = 1;
+        else if (!readNumber(raw.task_concurrency, args.task_concurrency))
+            program::exit(program::err(), "Invalid task concurrency.");
+    }
+
+    if (set(raw.task_queue_size) && !readNumber(raw.task_queue_size, args.task_queue_size))
+        program::exit(program::err(), "Invalid queue size.");
+       
+    if (set(raw.algorithm)) {
+        if (oneOf(raw.algorithm, {"path-tracing", "pt"}))
+            args.algorithm = Algorithm::path_tracing;
+        else if (oneOf(raw.algorithm, {"photon-mapping", "pm"}))
+            args.algorithm = Algorithm::photon_mapping;
+        else
+            program::exit(program::err(), "Not supported algorithm.");
+    }
+    
+    if (set(raw.paths_per_pixel) && !readNumber(raw.paths_per_pixel, args.paths_per_pixel))
+        program::exit(program::err(), "Invalid paths per pixel value.");
+    else if (args.algorithm == Algorithm::photon_mapping)
+        args.color_resolution = 10; // Default value for photon mapping
+
+    if (set(raw.path_tracing_strategy)) {
+        if (raw.path_tracing_strategy == "trace-projection")
+            args.path_tracing_strategy = PathTracing::Strategy::trace_projection;
+        else if (raw.path_tracing_strategy == "trace-direct-light")
+            args.path_tracing_strategy = PathTracing::Strategy::trace_direct_light;
+        else if (raw.path_tracing_strategy == "recursive")
+            args.path_tracing_strategy = PathTracing::Strategy::recursive;
+        else if (raw.path_tracing_strategy == "iterative")
+            args.path_tracing_strategy = PathTracing::Strategy::iterative;
+        else
+            program::exit(program::err(), "Not supported path tracing strategy.");
+    }
+
+    auto getBool = [set, oneOf](std::string_view str, bool& opt)
+    {
+        if (set(str)) {
+            if (oneOf(str, {"true", "t", "1", "TRUE", "T"}))
+                opt = true;
+            else if (oneOf(str, {"false", "f", "0", "FALSE", "F"}))
+                opt = false;
+            else
+                program::exit(program::err(), "Not a valid boolean: ", str);
+        }
+    };
+
+    getBool(raw.photon_mapping_use_next_event_estimation,
+            args.photon_mapping_use_next_event_estimation);
+
+    getBool(raw.photon_mapping_exclusive_evaluation,
+            args.photon_mapping_exclusive_evaluation);
+    
+    getBool(raw.photon_mapping_use_russian_roulette,
+            args.photon_mapping_use_russian_roulette);
+
+    if (set(raw.photon_mapping_evaluation_radius)
+        && (!readNumber(raw.photon_mapping_evaluation_radius,
+                        args.photon_mapping_evaluation_radius)
+            || args.photon_mapping_evaluation_radius <= 0.0) )
+    {
+        program::exit(program::err(), "Invalid evaluation radius.");
+    }
+
+    if (set(raw.photon_mapping_evaluation_radius)
+        && !readNumber(raw.photon_mapping_evaluation_radius,
+                       args.photon_mapping_evaluation_radius))
+    {
+        program::exit(program::err(), "Invalid number of evaluation photons.");
+    }
+    
+    if (set(raw.photon_mapping_total_saved_photons)
+        && !readNumber(raw.photon_mapping_total_saved_photons,
+                       args.photon_mapping_total_saved_photons))
+    {
+        program::exit(program::err(), "Invalid number of total saved photons.");
+    }
+
+    return args;
+}
 
 auto usage(int argc, char *argv[])
 {
@@ -65,18 +281,133 @@ auto usage(int argc, char *argv[])
         return 0;
     };
 
-     for (int i = 1; i < argc; ++i)
+    auto set = [](std::string_view arg) { return !arg.empty(); };
+
+    bool foundDst = false;
+
+    RawArguments raw;
+    for (int i = 1; i < argc; ++i)
     {
+        Index pos;
         std::string_view str {argv[i]};
-        if (Index pos = checkOpt(str, "-h", "--help"); pos > 0)
+
+        auto parseOption = [&](std::string_view& opt,
+                std::string_view duplicateError, std::string_view unspecifiedError)
+        {
+            if (set(opt))
+                program::exit(program::err(), duplicateError, " defined more than once.");
+
+            if (pos >= str.length())
+            {
+                if (++i == argc)
+                    program::exit(program::err(), "No ", unspecifiedError, " specified.");
+                opt = argv[i];
+            }
+            else { opt = str.substr(pos);}
+        };
+
+        auto parseBoolOption = [&](std::string_view& opt,
+                std::string_view duplicateError, std::string_view unspecifiedError)
+        {
+            if (set(opt))
+                program::exit(program::err(), duplicateError, " defined more than once.");
+
+            if (pos >= str.length())
+            {
+                if (str[pos] == '=' && pos + 1 >= str.length())
+                    opt = str.substr(pos + 1);
+                else
+                    program::exit(program::err(), "No ", unspecifiedError, " specified.");
+            }
+            else
+                opt = "true";
+        };
+
+        if (pos = checkOpt(str, "-h", "--help"); pos > 0)
         {
             program::exit(program::direct, helpStr);
         }
+        else if (pos = checkOpt(str, "-d", "--dimensions="); pos > 0)
+        {
+            parseOption(raw.dimensions,
+                    "Image dimensions", "dimensions");
+        }
+        else if (pos = checkOpt(str, "-c", "--color-resolution="); pos > 0)
+        {
+            parseOption(raw.color_resolution,
+                    "Color resolution", "color resolution");
+        }
+        else if (pos = checkOpt(str, "-f", "--output-format="); pos > 0)
+        {
+            parseOption(raw.output_format,
+                    "Output format", "format");
+        }
+        else if (pos = checkOpt(str, "-D", "--task-division="); pos > 0)
+        {
+            parseOption(raw.task_division,
+                    "Task division", "task division");
+        }
+        else if (pos = checkOpt(str, "-C", "--task-concurrency="); pos > 0)
+        {
+            parseOption(raw.task_concurrency,
+                    "Task concurrency", "task concurrency");
+        }
+        else if (pos = checkOpt(str, "-Q", "--task-queue-size="); pos > 0)
+        {
+            parseOption(raw.task_queue_size,
+                    "Task queue size", "task queue size");
+        }
+        else if (pos = checkOpt(str, "-a", "--algorithm="); pos > 0)
+        {
+            parseOption(raw.algorithm,
+                    "Render algorithm", "render algorithm");
+        }
+        else if (pos = checkOpt(str, "-p", "--paths-per-pixel="); pos > 0)
+        {
+            parseOption(raw.paths_per_pixel,
+                    "Paths per pixel value", "paths per pixel");
+        }
+        else if (pos = checkOpt(str, "-s", "--path-tracing-strategy="); pos > 0)
+        {
+            parseOption(raw.path_tracing_strategy,
+                    "Path tracing strategy", "path tracing strategy");
+        }
+        else if (pos = checkOpt(str, "-N", "--photon-mapping-use-next-event-estimation"); pos > 0)
+        {
+            parseBoolOption(raw.photon_mapping_use_next_event_estimation,
+                    "Next event estimation flag", "next event estimation flag value");
+        }
+        else if (pos = checkOpt(str, "-E", "--photon-mapping-exclusive-evaluation"); pos > 0)
+        {
+            parseBoolOption(raw.photon_mapping_exclusive_evaluation,
+                    "Exclusive evaluation flag", "exclusive evaluation flag value");
+        }
+        else if (pos = checkOpt(str, "-R", "--photon-mapping-use-russian-roulette"); pos > 0)
+        {
+            parseBoolOption(raw.photon_mapping_use_russian_roulette,
+                    "Russian roulette flag", "russian roulette flag value");
+        }
+        else if (pos = checkOpt(str, "-r", "--photon-mapping-evaluation-radius="); pos > 0)
+        {
+            parseOption(raw.photon_mapping_evaluation_radius,
+                    "Evaluation radius", "evaluation radius");
+        }
+        else if (pos = checkOpt(str, "-e", "--photon-mapping-evaluation-photons="); pos > 0)
+        {
+            parseOption(raw.photon_mapping_evaluation_photons,
+                    "Number of evaluation photons", "number of evaluation photons");
+        }
+        else if (pos = checkOpt(str, "-t", "--photon-mapping-total-saved-photons="); pos > 0)
+        {
+            parseOption(raw.photon_mapping_total_saved_photons,
+                    "Number of saved photons", "number saved photons");
+        }
+        else if (!foundDst) { raw.destination_file = str; foundDst = true; }
+        else program::exit(program::err(), "Wrong number of arguments.");
     }
-}
 
-// Change namespace to change the scene
-using namespace cornell_box_test;
+    return processArgs(raw);
+}
 
 double measure(auto lambda)
 {
@@ -90,30 +421,18 @@ double measure(auto lambda)
 
 int main(int argc, char* argv[])
 {
+    // Change namespace to change the scene
+    using namespace cornell_box_test;
+
     SET_PROGRAM_NAME(argv);
-    usage(argc, argv);
-    const Dimensions dimensions {1000, 1000}; //-d 500:500
-    const Natural resolution = (Natural{1} << 32) - 1; //8bit/16bit/32bit if bmp
-    const Natural ppp = 10; //-ppp 20
-    const Dimensions taskDivision {1, 1}; //--task-division=region:10:10/row/column/pixel
-    const std::string_view destination = "cornell_box_test.ppm";
-    const std::string_view format = "ppm"; //--output-format=bmp
-    const Index taskConcurrency = 4;//PathTracing::Renderer::totalConcurrency; //"--task-concurrency=total"; //1,2...
-    const Index taskQueueSize = 100;//"--task-queue-size=unbounded"; //20,50...
-    const auto pathTracingStrategy = PathTracing::Strategy::recursive;
-    const Algorithm strategy = Algorithm::photon_mapping;
-    const bool nextEventEstimation = false;
-    const bool onlyCountSameShapePhotons = false;
-    const Real evalRadius = 0.05;
-    const Index evalNumPhotons = 10000;
+    const Arguments args = usage(argc, argv);
 
-    //const Index totalPhotons = 50'000'000;
-    const Index totalPhotons = 5'000'000;
+    Camera camera {cam::focus, cam::front, cam::up, args.dimensions};
+    Image img {1, args.color_resolution, args.dimensions};
 
-    Camera camera {cam::focus, cam::front, cam::up, dimensions};
-    Image img {1, resolution, dimensions};
+    std::cout << "output: " << args.output_format;
 
-    auto writer = makeImageWriter(destination, format);
+    auto writer = makeImageWriter(args.destination_file, args.output_format);
     if (!writer)
         program::exit(program::err(), "Could not open destination file or format not available.");
     
@@ -127,29 +446,35 @@ int main(int argc, char* argv[])
             program::exit(program::err(), "Could not write destination file.");
     };
 
-    switch (strategy)
+    switch (args.algorithm)
     {
     case Algorithm::photon_mapping:
         render([&]()
         {
-            PhotonMapping::TaskDivider divider {dimensions, taskDivision};
-            PhotonMapping::Renderer photonMapper {taskConcurrency,
-                    taskQueueSize, divider};
+            PhotonMapping::TaskDivider divider {args.dimensions, args.task_division};
+            PhotonMapping::Renderer photonMapper {
+                args.task_concurrency, args.task_queue_size, divider
+            };
 
-            photonMapper.render(camera, img, objects, ppp, totalPhotons,
-                    evalRadius, evalNumPhotons, nextEventEstimation,
-                    onlyCountSameShapePhotons);
+            photonMapper.render(camera, img, objects,
+                    args.paths_per_pixel, args.photon_mapping_total_saved_photons,
+                    args.photon_mapping_evaluation_radius,
+                    args.photon_mapping_evaluation_photons,
+                    args.photon_mapping_use_next_event_estimation,
+                    args.photon_mapping_exclusive_evaluation);
         });
         break;
     case Algorithm::path_tracing:
     default:
         render([&]()
         {
-            PathTracing::TaskDivider divider {dimensions, taskDivision};
-            PathTracing::Renderer pathTracer {taskConcurrency, taskQueueSize,
-                    divider, pathTracingStrategy};
+            PathTracing::TaskDivider divider {args.dimensions, args.task_division};
+            PathTracing::Renderer pathTracer {
+                args.task_concurrency, args.task_queue_size, divider,
+                args.path_tracing_strategy
+            };
 
-            pathTracer.render(camera, img, objects, ppp);
+            pathTracer.render(camera, img, objects, args.paths_per_pixel);
         });
     }
 

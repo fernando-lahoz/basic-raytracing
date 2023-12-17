@@ -46,8 +46,8 @@ using TraceFunction = decltype(traceProjection)*;
 
 enum class Strategy : uint8_t
 {
-    projection,
-    direct,
+    trace_projection,
+    trace_direct_light,
     recursive,
     iterative
 };

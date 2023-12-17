@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
 
     auto reader = makeImageReader(source);
     if (reader == nullptr)
-        program::exit(program::err(), "Could not open souce file.");
+        program::exit(program::err(), "Could not open source file.");
     
     Image img; 
     if (!reader->read(img))

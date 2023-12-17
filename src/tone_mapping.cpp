@@ -66,5 +66,5 @@ std::unique_ptr<ToneMappingStrategy> makeToneMappingStrategy(std::string_view st
     else if (checkName<Equalization_Clamping>(name)) return checkStrategy<Equalization_Clamping>(dots, strategy);
     else if (checkName<Gamma>(name)) return checkStrategy<Gamma>(dots, strategy);
     else if (checkName<Gamma_Clamping>(name)) return checkStrategy<Gamma_Clamping>(dots, strategy);
-    return std::make_unique<Equalization>();
+    return nullptr;
 }

@@ -28,11 +28,11 @@ Renderer(const Index numWorkers, const Index queueSize,
     {
         switch (strategy)
         {
-        case Strategy::projection: return traceProjection;
-        case Strategy::direct:     return traceDirectLight;
-        case Strategy::recursive:  return traceIndirectLightRecursive;
-        case Strategy::iterative:  return traceIndirectLightRecursive;
-        default:                   return traceIndirectLightRecursive;
+        case Strategy::trace_projection:   return traceProjection;
+        case Strategy::trace_direct_light: return traceDirectLight;
+        case Strategy::recursive:          return traceIndirectLightRecursive;
+        case Strategy::iterative:          return traceIndirectLightRecursive;
+        default:                           return traceIndirectLightRecursive;
         }
     }();
 
