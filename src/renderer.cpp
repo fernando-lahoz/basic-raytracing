@@ -21,7 +21,7 @@ Usage: ./renderer [OTPION...] OUTPUT_FILE
   -d, --dimensions=WIDTH:HEIGTH    Set dimensions of the image.
                                    Default size is 256x256.
 
-  -r, --color-resolution=INT       Set range of natural values each
+  -c, --color-resolution=INT       Set range of natural values each
                                    RGB component has to be stored.
                                    Default resolution is 8 bits (LDR).
 
@@ -38,23 +38,71 @@ Usage: ./renderer [OTPION...] OUTPUT_FILE
 
       Available formats: ppm, bmp
 
-  -p, --paths-per-pixel=INT        Set the number of samples per pixel.
-                                   Default value is 50.
 
-  -t, --task-division=STRING       Array of pixels that compounds a task.
+Ray tracing common parameters:
+
+  -a, --algorithm=STRING           Set the ray tracing algorithm.
+
+      Available algorithms: path-tracing (pt), photon-mapping (pm)
+
+  -p, --paths-per-pixel=INT        Set the number of samples per pixel.
+                                   Default value for path tracing is 100,
+                                   whereas for photon mapping the default
+                                   value is 10.
+
+
+Path tracing special parameters:
+
+  -s, --path-tracing-strategy=STRING    Path tracing algorithm traces
+                                        indirect light using a recursive
+                                   implementation by default. Set this
+                                   parameter to change the path tracer
+                                   implementation.
+                                        
+      Available implementations:
+        trace-projection    ->  Considers every object is an area light
+        trace-direct-light  ->  Only traces direct light
+        recursive           ->  Traces indirect light recursively
+        iterative           ->  Traces indirect light iteratively
+
+
+Photon mapping special parameters:
+
+  -N[=BOOL], --photon-mapping-use-next-event-estimation[=BOOL]
+
+  -E[=BOOL], --photon-mapping-exclusive-evaluation[=BOOL]
+
+  -R[=BOOL], --photon-mapping-use-russian-roulette[=BOOL] 
+
+  -r, --photon-mapping-evaluation-radius=REAL   Set the radius of the
+                                                spherical limit where
+                                                neighbor photons are
+                                                evaluated.
+
+  -e, --photon-mapping-evaluation-photons=INT   Set the number of neighbor
+                                                photons to be evaluated.
+
+  -t, --photon-mapping-total-saved-photons=INT  Set the total number of
+                                                photons collisions within
+                                                the scene.
+
+Parallelization parameters:
+
+  -D, --task-division=STRING       Array of pixels that compounds a task.
 
       Available divisions: region:WIDTH:HEIGTH, row, column, pixel
 
-  -c, --task-concurrency=INT       Set the number of worker threads.
+  -C, --task-concurrency=INT       Set the number of worker threads.
                                    By default, it uses CPU total
                                    number of logical threads.
 
-      Special values: none (1), total (0)
+      Special values:
+        none       (1)  ->  No parallelization
+        total      (0)  ->  Use all execution units
 
-  -q, --task-queue-size=INT        Set the number of entries of the
+  -Q, --task-queue-size=INT        Set the number of entries of the
                                    task queue. Default size is 100.
 
-    **NO ESTÁ COMPLETA
 )";
 
 struct RawArguments
@@ -142,7 +190,7 @@ Arguments processArgs(const RawArguments& raw)
         };
 
         const auto[ok, dots] = getNum(str, dim.width);
-        if (ok) return getNum({str.data() + dots, str.size()}, dim.width).first;
+        if (ok) return getNum({str.data() + dots + 1, str.size() - dots - 1}, dim.width).first;
         else    return false;
     };
 
@@ -206,10 +254,12 @@ Arguments processArgs(const RawArguments& raw)
             program::exit(program::err(), "Not supported algorithm.");
     }
     
-    if (set(raw.paths_per_pixel) && !readNumber(raw.paths_per_pixel, args.paths_per_pixel))
-        program::exit(program::err(), "Invalid paths per pixel value.");
+    if (set(raw.paths_per_pixel)) {
+        if (!readNumber(raw.paths_per_pixel, args.paths_per_pixel))
+            program::exit(program::err(), "Invalid paths per pixel value.");
+    } 
     else if (args.algorithm == Algorithm::photon_mapping)
-        args.color_resolution = 10; // Default value for photon mapping
+        args.paths_per_pixel = 10; // Default value for photon mapping
 
     if (set(raw.path_tracing_strategy)) {
         if (raw.path_tracing_strategy == "trace-projection")
@@ -312,12 +362,19 @@ auto usage(int argc, char *argv[])
             if (set(opt))
                 program::exit(program::err(), duplicateError, " defined more than once.");
 
-            if (pos >= str.length())
+            if (pos < str.length())
             {
-                if (str[pos] == '=' && pos + 1 >= str.length())
-                    opt = str.substr(pos + 1);
-                else
+                if (str[pos] == '=') {
+                    if (pos + 1 < str.length())
+                        opt = str.substr(pos + 1);
+                    else if (++i == argc)
+                        program::exit(program::err(), "No ", unspecifiedError, " specified.");
+                    else
+                        opt = argv[i];
+                }                    
+                else {
                     program::exit(program::err(), "No ", unspecifiedError, " specified.");
+                }
             }
             else
                 opt = "true";
@@ -429,8 +486,6 @@ int main(int argc, char* argv[])
 
     Camera camera {cam::focus, cam::front, cam::up, args.dimensions};
     Image img {1, args.color_resolution, args.dimensions};
-
-    std::cout << "output: " << args.output_format;
 
     auto writer = makeImageWriter(args.destination_file, args.output_format);
     if (!writer)

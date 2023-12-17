@@ -148,7 +148,7 @@ Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
             if constexpr (std::same_as<PhotonTy, SPhoton>)
                 if (photon->shape != &shape)
                     continue;
-#if 0
+#if 1
 //UNIFORM KERNEL
             cd = cd + photon->flux * material.kd();
             count++;

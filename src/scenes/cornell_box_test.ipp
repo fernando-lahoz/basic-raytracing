@@ -23,7 +23,7 @@ Object left_sphere {
 
 Object right_sphere {
     MS(Sphere)(Point{-0.5, -0.7, -0.25}, 0.3),
-    MS(Material)(specular({0.25, 0.25, 0.25}) + refractive({0.7, 0.7, 0.7}, 1.5))
+    MS(Material)(specular({0.25, 0.25, 0.25}) + refractive({0.75, 0.75, 0.75}, 1.5))
     //MS(Material)(refractive({0.95, 0.95, 0.95}, 1.5))
     //MS(Material)(diffuse({0.5, 0.9, 0.9}))
 };

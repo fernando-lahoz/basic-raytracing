@@ -37,8 +37,8 @@ Direction perfectSpecularRefraction(const Shape::Normal& normal, const Direction
     
     const Real cosOut = dot(dir, n);
 
-    if (std::abs(cosOut) > 0.9999)
-        return n;
+    /* if (std::abs(cosOut) > 0.99999)
+        return n; */
 
     const Real sinIn = std::sin(std::acos(cosOut)) * index;
     const Real in = std::asin(sinIn);
@@ -47,8 +47,7 @@ Direction perfectSpecularRefraction(const Shape::Normal& normal, const Direction
     const Direction rotRef = normalize(cross(n, dir));
     const Direction ortogonal2 = cross(rotRef, n);
 
-    const Direction rotatedDirection = n * cosIn
-                                     + ortogonal2 * sinIn;
+    const Direction rotatedDirection = n * cosIn + ortogonal2 * sinIn;
 
     return normalize(rotatedDirection);
 }
@@ -83,7 +82,8 @@ Material::Evaluation Material::eval(const Point& hit, const Ray& wIn, Ray& wOut,
         return {_ks / ps, Component::ks};
     }
     else if (x - pd - ps <= pt)
-    {
+    {   
+        //std::cout << "Refraction!\n";
         setWOut(perfectSpecularRefraction(normal, wIn.d, index));
         return {_kt / pt, Component::kt};
     }

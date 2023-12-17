@@ -11,7 +11,7 @@ class Material
 private:
     bool emits = false;
     Color _kd, _ks, _kt;
-    Real index; 
+    Real index = 0; 
 
     Material() = default;
 public:
