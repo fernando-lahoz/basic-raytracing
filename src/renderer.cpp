@@ -5,6 +5,7 @@
 #include <iostream>
 #include <functional>
 #include <initializer_list>
+#include <charconv>
 
 #include "image.hpp"
 #include "image_writer.hpp"
