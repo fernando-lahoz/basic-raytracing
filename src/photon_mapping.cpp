@@ -128,7 +128,7 @@ Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
 
     const auto [rd, rs, rt, pd, ps, pt] = material.sampleAll(hit, ray, normal, random);
 
-    if (normal.side == Shape::Side::in) //parche imperfecto
+    if (normal.side == Shape::Side::in) //parche imperfecto -> usar puntero a figura o mejor kt?? + parchear en path tracing
     {
         return castRayToScene<PhotonTy>(objSet, rt, map, random, radius, numPhotons, nextEvent);
     }
@@ -143,12 +143,23 @@ Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
     {
         auto nearest = map.nearest_neighbors(hit, numPhotons, radius);
         Index count = 0;
+
+        Real sumOfWeights = 0;
+        for (const PhotonTy* photon : nearest)
+        {
+            const Real r = norm(hit - photon->position);
+            const Real weight = (radius - r) / radius;
+            sumOfWeights += weight;
+        }
+        
+        //std::cout << "sumOfWeights: " << sumOfWeights << '\n';
+
         for (const PhotonTy* photon : nearest)
         {
             if constexpr (std::same_as<PhotonTy, SPhoton>)
                 if (photon->shape != &shape)
                     continue;
-#if 1
+#if 0
 //UNIFORM KERNEL
             cd = cd + photon->flux * material.kd();
             count++;
@@ -158,14 +169,24 @@ Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
 //CONE KERNEL
 
             const Real r = norm(hit - photon->position);
-            cd = cd + photon->flux * material.kd() / (r * r);
+            const Real weight = (radius - r) / (radius);
+            cd = cd + photon->flux * material.kd() * weight;
             count++;
         }
-        cd = cd / (numbers::pi * numbers::pi);// * (nearest.size() / count);
-
+        
+        cd = cd / (radius * radius * radius * numbers::pi * numbers::pi);// * (nearest.size() / count);
+        //std::cout << "cd: " << cd << '\n';
 #elif 1
 //GAUSSIAN KERNEL
 
+            const Real r = norm(hit - photon->position);
+            const Real weight = (radius - r) / (radius);
+            cd = cd + photon->flux * material.kd() * weight;
+            count++;
+        }
+        
+        cd = cd / (radius * radius * radius * numbers::pi * numbers::pi);// * (nearest.size() / count);
+        //std::cout << "cd: " << cd << '\n';
 
 #endif
         if (nextEvent) 
@@ -200,9 +221,8 @@ void workerRoutine(TaskQueue& tasks, Real increment, const Camera& camera,
             }
             // Thread-safe operation: a pixel is not assigned to two different threads 
             img(i, j) = RGBPixel (meanColor / ppp);
-
-            progressBar.incrementProgress(increment);
         }
+        progressBar.incrementProgress(increment);
     }
 }
 

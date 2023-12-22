@@ -34,12 +34,11 @@ Run with `--help` for additional information of usage.
 # Linux shell
 ./bin/renderer --algorithm=photon-mapping \
            --paths-per-pixel=10 \
-           --photon-mapping-use-next-event-estimation \
            --photon-mapping-evaluation-radius=0.4 \
            --photon-mapping-evaluation-photons=1000 \
            --photon-mapping-total-saved-photons=100000 \
            \
-           --dimensions=256:256 \
+           --dimensions=500:500 \
            --color-resolution=32bit \
            --output-format=bmp \
            output_image.bmp

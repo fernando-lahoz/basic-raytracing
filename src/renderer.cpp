@@ -184,14 +184,16 @@ Arguments processArgs(const RawArguments& raw)
         auto getNum = [readNumber](std::string_view str, Index& value) -> std::pair<bool, Index>
         {
             auto dots = str.find_first_of(':');
-            auto num = str.substr(0, dots - 1);
+            if (dots == std::string_view::npos)
+                dots = str.length();
+            auto num = str.substr(0, dots);
             if (num.empty())
                 return {false, dots};
             return {readNumber(num, value), dots};
         };
 
         const auto[ok, dots] = getNum(str, dim.width);
-        if (ok) return getNum({str.data() + dots + 1, str.size() - dots - 1}, dim.width).first;
+        if (ok) return getNum({str.data() + dots + 1, str.size() - dots - 1}, dim.height).first;
         else    return false;
     };
 
@@ -225,9 +227,9 @@ Arguments processArgs(const RawArguments& raw)
 
     if (set(raw.task_division)) {
         if (oneOf(raw.task_division, {"row"}))
-            args.task_division = Dimensions{args.dimensions.width, 1};
+            args.task_division = Dimensions{args.task_division.width, 1};
         else if (oneOf(raw.task_division, {"column"}))
-            args.task_division = Dimensions{1, args.dimensions.height};
+            args.task_division = Dimensions{1, args.task_division.height};
         else if (oneOf(raw.task_division, {"pixel"}))
             args.task_division = Dimensions{1, 1};
         else if (!checkDimensions(raw.task_division, args.task_division))
