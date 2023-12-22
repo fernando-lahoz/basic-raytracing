@@ -1,6 +1,3 @@
-#include "scenes/cornell_box_test.ipp"
-#include "scenes/cornell_box_1.ipp"
-
 #include <chrono>
 #include <iostream>
 #include <functional>
@@ -11,13 +8,14 @@
 #include "image_writer.hpp"
 #include "path_tracing.hpp"
 #include "photon_mapping.hpp"
+#include "scene_reader.hpp"
 
 #include "program.hpp"
 
 enum class Algorithm {photon_mapping, path_tracing};
 
 static constexpr std::string_view helpStr = R"(
-Usage: ./renderer [OTPION...] OUTPUT_FILE
+Usage: ./renderer [OTPION...] SCENE_FILE OUTPUT_FILE
 
   -d, --dimensions=WIDTH:HEIGTH    Set dimensions of the image.
                                    Default size is 256x256.
@@ -112,6 +110,7 @@ struct RawArguments
     // Output image
     Arg dimensions;       // -d INT:INT
     Arg color_resolution; // -c INT | 8bit | 16bit | 32bit
+    Arg scene_file;
     Arg destination_file;
     Arg output_format;    // -f STR
 
@@ -141,6 +140,7 @@ struct Arguments
     // Output image
     Dimensions dimensions = {256, 256};
     Natural color_resolution = 255;
+    std::string_view scene_file;
     std::string_view destination_file;
     std::string_view output_format;
 
@@ -208,6 +208,7 @@ Arguments processArgs(const RawArguments& raw)
     };
 
     Arguments args;
+    args.scene_file = raw.scene_file;
     args.destination_file = raw.destination_file;
     args.output_format = raw.output_format;
 
@@ -336,7 +337,7 @@ auto usage(int argc, char *argv[])
 
     auto set = [](std::string_view arg) { return !arg.empty(); };
 
-    bool foundDst = false;
+    bool foundDst = false, foundSrc = false;
 
     RawArguments raw;
     for (int i = 1; i < argc; ++i)
@@ -462,9 +463,16 @@ auto usage(int argc, char *argv[])
             parseOption(raw.photon_mapping_total_saved_photons,
                     "Number of saved photons", "number saved photons");
         }
-        else if (!foundDst) { raw.destination_file = str; foundDst = true; }
+        else if (foundSrc && !foundDst) { raw.destination_file = str; foundDst = true; }
+        else if (!foundSrc) { raw.scene_file = str; foundSrc = true; }
         else program::exit(program::err(), "Wrong number of arguments.");
     }
+
+    if (!foundSrc)
+        program::exit(program::err(), "No scene file specified.");
+
+    if (!foundDst)
+        program::exit(program::err(), "No destination file specified.");
 
     return processArgs(raw);
 }
@@ -481,13 +489,18 @@ double measure(auto lambda)
 
 int main(int argc, char* argv[])
 {
-    // Change namespace to change the scene
-    using namespace cornell_box_test;
-
     SET_PROGRAM_NAME(argv);
     const Arguments args = usage(argc, argv);
 
-    Camera camera {cam::focus, cam::front, cam::up, args.dimensions};
+    // Read scene
+    auto scene = [&args]() {
+        auto s = makeSceneFromFile(args.scene_file);
+        if (!s)
+            program::exit(program::err(), "Could not read scene file or is incorrectly defined.");
+        return s.value();
+    }();
+
+    Camera camera {scene.focus, scene.front, scene.up, args.dimensions};
     Image img {1, args.color_resolution, args.dimensions};
 
     auto writer = makeImageWriter(args.destination_file, args.output_format);
@@ -514,7 +527,7 @@ int main(int argc, char* argv[])
                 args.task_concurrency, args.task_queue_size, divider
             };
 
-            photonMapper.render(camera, img, objects,
+            photonMapper.render(camera, img, scene.objects,
                     args.paths_per_pixel, args.photon_mapping_total_saved_photons,
                     args.photon_mapping_evaluation_radius,
                     args.photon_mapping_evaluation_photons,
@@ -532,7 +545,7 @@ int main(int argc, char* argv[])
                 args.path_tracing_strategy
             };
 
-            pathTracer.render(camera, img, objects, args.paths_per_pixel);
+            pathTracer.render(camera, img, scene.objects, args.paths_per_pixel);
         });
     }
 
