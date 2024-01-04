@@ -59,6 +59,7 @@ struct Photon
     };
 };
 
+// Includes pointer to the shape in order to implement exclusive evaluation
 struct SPhoton
 {
     Point position;
@@ -95,7 +96,7 @@ private:
     template<typename PhotonTy>
     void renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
             Index ppp, Index totalPhotons, Real evalRadius, Index evalNumPhotons,
-            bool nextEventEstimation);
+            bool nextEventEstimation, bool russianRoulette);
 public:
     static constexpr Index totalConcurrency = 0;
 
@@ -105,7 +106,7 @@ public:
     void render(const Camera& cam, Image& img, const ObjectSet& objects,
             Index ppp, Index totalPhotons, Real evalRadius,
             Index evalNumPhotons, bool nextEventEstimation,
-            bool onlyCountSameShapePhotons);
+            bool onlyCountSameShapePhotons, bool russianRoulette);
     
     Index numThreads();
 };

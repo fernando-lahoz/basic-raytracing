@@ -108,7 +108,8 @@ void castPhotonToScene(const ObjectSet& objSet, const Ray& ray,
 
 template<typename PhotonTy>
 Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
-        const PhotonMap<PhotonTy>& map, Randomizer& random, Real radius, Index numPhotons, bool nextEvent)
+        const PhotonMap<PhotonTy>& map, Randomizer& random, Real radius,
+        Index numPhotons, bool nextEvent, bool russianRoulette)
 {
     const auto [t, hitObj] = findIntersection(objSet, ray);
 
@@ -126,18 +127,48 @@ Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
     const auto hit = ray.hitPoint(t);
     const auto normal = shape.normal(ray.d, hit);
 
+    //--------------------------------------------------------------------------
+    if (russianRoulette)
+    {
+        const auto [secondaryRay, k] = material.sample(hit, ray, normal, random);
+        switch (k)
+        {
+        case Material::Component::ks:
+        case Material::Component::kt:
+            return castRayToScene<PhotonTy>(objSet, secondaryRay, map, random, radius, numPhotons, nextEvent, russianRoulette);
+        case Material::Component::ka:
+        case Material::Component::kd:
+            auto nearest = map.nearest_neighbors(hit, numPhotons, radius); // Preguntar por estos valores
+            // uniform kernel
+
+            Color sum;
+            Index count = 0;
+            for (const PhotonTy* photon : nearest)
+            {
+                if constexpr (std::same_as<PhotonTy, SPhoton>)
+                    if (photon->shape != &shape) // Only sum photons on the same object
+                        continue;
+                sum = sum + photon->flux * material.kd();
+                count++;
+            }
+            sum = sum / (radius * radius * numbers::pi * numbers::pi);// * (nearest.size() / count);
+            return sum;
+        }
+    }
+    //--------------------------------------------------------------------------
+
     const auto [rd, rs, rt, pd, ps, pt] = material.sampleAll(hit, ray, normal, random);
 
     if (normal.side == Shape::Side::in) //parche imperfecto -> usar puntero a figura o mejor kt?? + parchear en path tracing
     {
-        return castRayToScene<PhotonTy>(objSet, rt, map, random, radius, numPhotons, nextEvent);
+        return castRayToScene<PhotonTy>(objSet, rt, map, random, radius, numPhotons, nextEvent, russianRoulette);
     }
 
     Color cd, cs, ct;
     if (ps > 0.001)
-        cs = castRayToScene<PhotonTy>(objSet, rs, map, random, radius, numPhotons, nextEvent);
+        cs = castRayToScene<PhotonTy>(objSet, rs, map, random, radius, numPhotons, nextEvent, russianRoulette);
     if (pt > 0.001)
-        ct = castRayToScene<PhotonTy>(objSet, rt, map, random, radius, numPhotons, nextEvent);
+        ct = castRayToScene<PhotonTy>(objSet, rt, map, random, radius, numPhotons, nextEvent, russianRoulette);
 
     if (pd > 0.001)
     {
@@ -200,7 +231,7 @@ template<typename PhotonTy>
 void workerRoutine(TaskQueue& tasks, Real increment, const Camera& camera,
         Image& img, const ObjectSet& objects, Index ppp, Real radius, Index numPhotons,
         const PhotonMap<PhotonTy>& map, TextProgressBar& progressBar,
-        bool nextEvent)
+        bool nextEvent, bool russianRoulette)
 {
     Camera cam {camera};
     Randomizer random {0.0, 1.0};
@@ -217,7 +248,8 @@ void workerRoutine(TaskQueue& tasks, Real increment, const Camera& camera,
                 Ray ray = cam.randomRay(i, j);
                 meanColor = meanColor
                           + castRayToScene<PhotonTy>(objects, ray, map, random,
-                                                     radius, numPhotons, nextEvent);
+                                                     radius, numPhotons,
+                                                     nextEvent, russianRoulette);
             }
             // Thread-safe operation: a pixel is not assigned to two different threads 
             img(i, j) = RGBPixel (meanColor / ppp);
@@ -266,7 +298,8 @@ std::vector<Index> dividePhotonsByPower(const ObjectSet& objSet, Index total)
 template<typename PhotonTy>
 void PhotonMapping::Renderer::
 renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
-        Index ppp, Index totalPhotons, Real evalRadius, Index evalNumPhotons, bool nextEventEstimation)
+        Index ppp, Index totalPhotons, Real evalRadius, Index evalNumPhotons,
+        bool nextEventEstimation, bool russianRoulette)
 {
     constexpr std::string_view jump_to_previous_line = "\033[F";
 
@@ -353,7 +386,7 @@ renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
         worker = std::thread(workerRoutine<PhotonTy>, std::ref(tasks), increment,
                 std::cref(cam), std::ref(img), std::cref(objects), ppp,
                 evalRadius, evalNumPhotons, std::cref(map),
-                std::ref(progressBar), nextEventEstimation);
+                std::ref(progressBar), nextEventEstimation, russianRoulette);
     }
 
     leader.join();
@@ -374,16 +407,18 @@ renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
 void PhotonMapping::Renderer::
 render(const Camera& cam, Image& img, const ObjectSet& objects,
         Index ppp, Index totalPhotons, Real evalRadius, Index evalNumPhotons, bool nextEventEstimation,
-        bool onlyCountSameShapePhotons)
+        bool onlyCountSameShapePhotons, bool russianRoulette)
 {
     if (onlyCountSameShapePhotons)
     {
         renderSpecialized<SPhoton>(cam, img, objects,
-                ppp, totalPhotons, evalRadius, evalNumPhotons, nextEventEstimation);
+                ppp, totalPhotons, evalRadius, evalNumPhotons,
+                nextEventEstimation, russianRoulette);
     }
     else
     {
         renderSpecialized<Photon>(cam, img, objects,
-                ppp, totalPhotons, evalRadius, evalNumPhotons, nextEventEstimation);
+                ppp, totalPhotons, evalRadius, evalNumPhotons,
+                nextEventEstimation, russianRoulette);
     }
 }

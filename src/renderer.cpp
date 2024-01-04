@@ -519,7 +519,8 @@ int main(int argc, char* argv[])
                     args.photon_mapping_evaluation_radius,
                     args.photon_mapping_evaluation_photons,
                     args.photon_mapping_use_next_event_estimation,
-                    args.photon_mapping_exclusive_evaluation);
+                    args.photon_mapping_exclusive_evaluation,
+                    args.photon_mapping_use_russian_roulette);
         });
         break;
     case Algorithm::path_tracing:
