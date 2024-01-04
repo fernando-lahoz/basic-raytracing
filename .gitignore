@@ -4,4 +4,6 @@ build
 bin
 *.exe
 
+images
+
 libstd_path.txt

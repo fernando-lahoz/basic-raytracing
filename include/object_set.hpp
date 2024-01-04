@@ -10,11 +10,11 @@
 class Object
 {
 private:
-    std::shared_ptr<Shape> _shape;
-    std::shared_ptr<Material> _material;
+    std::shared_ptr<const Shape> _shape;
+    std::shared_ptr<const Material> _material;
 public:
-    inline Object(std::shared_ptr<Shape> shape_,
-            std::shared_ptr<Material> material_)
+    inline Object(std::shared_ptr<const Shape> shape_,
+            std::shared_ptr<const Material> material_)
         : _shape{shape_}, _material{material_}
     {}
 

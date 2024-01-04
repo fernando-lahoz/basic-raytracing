@@ -15,13 +15,13 @@ namespace cam
     Direction up {0, 1, 0};
 }
 
-Object left_sphere {
+const Object left_sphere {
     MS(Sphere)(Point{0.5, -0.7, 0.25}, 0.3),
     MS(Material)(diffuse({0.3, 0.6, 0.6}) + specular({0.3, 0.3, 0.3}))
     //MS(Material)(diffuse({0.7, 0.575, 0.8}))
 };
 
-Object right_sphere {
+const Object right_sphere {
     MS(Sphere)(Point{-0.5, -0.7, -0.25}, 0.3),
     MS(Material)(specular({0.25, 0.25, 0.25}) + refractive({0.75, 0.75, 0.75}, 1.5))
     //MS(Material)(refractive({0.95, 0.95, 0.95}, 1.5))
@@ -29,33 +29,33 @@ Object right_sphere {
 };
 
 
-Object left_plane {
+const Object left_plane {
     MS(Plane)(Point{1, 0, 0},  Direction{-1, 0, 0}),
     MS(Material)(diffuse({0.8, 0, 0}))
 };
 
-Object right_plane {
+const Object right_plane {
     MS(Plane)(Point{-1, 0, 0}, Direction{1, 0, 0}),
     MS(Material)(diffuse({0, 0.8, 0}))
 };
 
-Object floor_plane {
+const Object floor_plane {
     MS(Plane)(Point{0, -1, 0}, Direction{0, 1, 0}),
     MS(Material)(diffuse({0.9, 0.9, 0.9}))
 };
 
-Object back_plane {
+const Object back_plane {
     MS(Plane)(Point{0, 0, 1},  Direction{0, 0, -1}),
     MS(Material)(diffuse({0.9, 0.9, 0.9}))
 };
 
-Object ceiling_plane {
+const Object ceiling_plane {
     MS(Plane)(Point{0, 1, 0},  Direction{0, -1, 0}),
     //MS(Material)(emitter({0.9, 0.9, 0.9}))
     MS(Material)(diffuse({0.9, 0.9, 0.9}))
 };
 
-PointLight light {{0, 0.5, 0}, {1, 1, 1}};
+const PointLight light {{0, 0.5, 0}, {1, 1, 1}};
 
 ObjectSet objects
 {

@@ -78,7 +78,7 @@ auto usage(int argc, char *argv[])
 
             foundOutputFmt = true;
         }
-        else if (foundSrc) { destination = str; foundDst = true; }
+        else if (foundSrc && !foundDst) { destination = str; foundDst = true; }
         else if (!foundSrc) { source = str; foundSrc = true; }
         else program::exit(program::err(), "Wrong number of arguments.");
     }

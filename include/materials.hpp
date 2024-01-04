@@ -12,8 +12,6 @@ private:
     bool emits = false;
     Color _kd, _ks, _kt;
     Real index = 0; 
-
-    Material() = default;
 public:
 
     friend Material emitter(const Color& ke);

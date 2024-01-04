@@ -1,0 +1,77 @@
+# Cornell Box with two demi-specular spheres lit by a point light.
+
+Camera {
+    focus: 0 0 -3.5
+    front: 0 0 3
+    up: 0 1 0
+}
+
+# Left Sphere
+Sphere {
+    center: 0.5 -0.7 0.25
+    radius: 0.3
+    material: Shade {
+        diffuse: 0.3 0.6 0.6
+        specular: 0.3 0.3 0.3
+    }
+}
+
+# Right Sphere
+Sphere {
+    center: -0.5 -0.7 -0.25
+    radius: 0.3
+    material: Shade {
+        specular: 0.25 0.25 0.25
+        refractive: 0.75 0.75 0.75
+        ior: 1.5
+    }
+}
+
+# Left Plane
+Plane {
+    point: 1 0 0
+    normal: -1 0 0
+    material: Shade {
+        diffuse: 0.8 0 0
+    }
+}
+
+# Right Plane
+Plane {
+    point: -1 0 0
+    normal: 1 0 0
+    material: Shade {
+        diffuse: 0 0.8 0
+    }
+}
+
+# Material
+white_wall = Shade {
+    diffuse: 0.9 0.9 0.9
+}
+
+# Floor Plane
+Plane {
+    point: 0 -1 0
+    normal: 0 1 0
+    material: white_wall
+}
+
+# Back Plane
+Plane {
+    point: 0 0 1
+    normal: 0 0 -1
+    material: white_wall
+}
+
+# Ceiling Plane
+Plane {
+    point: 0 1 0
+    normal: 0 -1 0
+    material: white_wall
+}
+
+Light {
+    point: 0 0.5 0
+    emission: 1 1 1
+}
