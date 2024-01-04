@@ -45,7 +45,7 @@ Run with `--help` for additional information of usage.
            ./scenes/cornel_box_diffuse_point.scene \
            ./images/output_image.bmp
 
-./bin/tone_mapper --strategy=gm:2.2 output_image.bmp output_image_mapped.bmp
+./bin/tone_mapper --strategy=gm:2.2 ./images/output_image.bmp ./images/output_image_mapped.bmp
 ```
 
 ```powershell

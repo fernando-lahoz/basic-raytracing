@@ -38,6 +38,7 @@ set(SubProjects
 
 set(Libraries
     # ¡El orden importa! Si A depende de B, B se pone antes que A
+    scene_reader
     tone_mapping
     image
     color_spaces
