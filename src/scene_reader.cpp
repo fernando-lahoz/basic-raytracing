@@ -60,6 +60,25 @@ std::optional<Scene> makeSceneFromFile(std::string_view file_name)
         return false;
     };
 
+    auto parse2DPoint = [&]<typename Ty>(Ty& value) -> bool
+    {
+        FlatPoint aux;
+        char openBracket, closeBracket;
+        if (!(is >> openBracket)) return false;
+        if (openBracket != '[')
+        {
+            is.unget();
+            return false;
+        }
+        is >> aux.x >> aux.y >> closeBracket;
+        if (is && closeBracket == ']')
+        {
+            value = Ty{aux.x, aux.y};
+            return true;
+        }
+        return false;
+    };
+
     auto parseReal = [&]<typename Ty>(Ty& value) -> bool
     {
         Real aux;
@@ -271,6 +290,122 @@ std::optional<Scene> makeSceneFromFile(std::string_view file_name)
             if (!material) return std::nullopt;
             scene.objects.objects.emplace_back(
                 std::make_shared<Plane>(point, normal), material
+            );
+            getline(is, word);
+        }
+        else if (word == "Disk")
+        {
+            Point center;
+            Real radius = 0;
+            Direction normal;
+            std::shared_ptr<const Material> material;
+            bool readNextWord = true;
+            bool gotCenter = false, gotRadius = false, gotNormal = false, gotMaterial = false;
+            do {
+                if (readNextWord && !(is >> word))
+                    return std::nullopt;
+                readNextWord = true;
+                if (word == "center:")
+                {
+                    gotCenter = true;
+                    if (!parseVec(center))
+                        return std::nullopt;
+                }
+                else if (word == "radius:")
+                {
+                    gotRadius = true;
+                    if (!parseReal(radius))
+                        return std::nullopt;
+                }
+                else if (word == "normal:")
+                {
+                    gotNormal = true;
+                    if (!parseVec(normal))
+                        return std::nullopt;
+                }
+                else if (word == "material:")
+                {
+                    gotMaterial = true;
+                    std::string type;
+                    if (!(is >> type) || !(is >> word))
+                        return std::nullopt;
+                    if (word == "{") {
+                        material = parseMaterial(type);
+                    }
+                    else {
+                        material = findMaterial(type);
+                        readNextWord = false;
+                    }
+                }
+            } while (!gotCenter || !gotRadius || !gotNormal || !gotMaterial);
+            if (!material) return std::nullopt;
+            scene.objects.objects.emplace_back(
+                std::make_shared<Disk>(normal, center, radius), material
+            );
+            getline(is, word);
+        }
+        else if (word == "Polygon")
+        {
+            Point origin, reference;
+            Direction normal;
+            std::vector<FlatPoint> points;
+            std::shared_ptr<const Material> material;
+            bool readNextWord = true;
+            bool gotOrigin = false, gotReference = false,
+                 gotNormal = false, gotMaterial = false,
+                 gotPoints = false;
+            do {
+                if (readNextWord && !(is >> word))
+                    return std::nullopt;
+                readNextWord = true;
+                if (word == "origin:")
+                {
+                    gotOrigin = true;
+                    if (!parseVec(origin))
+                        return std::nullopt;
+                }
+                else if (word == "reference:")
+                {
+                    gotReference = true;
+                    if (!parseVec(reference))
+                        return std::nullopt;
+                }
+                else if (word == "normal:")
+                {
+                    gotNormal = true;
+                    if (!parseVec(normal))
+                        return std::nullopt;
+                }
+                else if (word == "points:")
+                {
+                    gotPoints = true;
+                    do {
+                        points.emplace_back();
+                    } while (parse2DPoint(points.back()));
+                    points.resize(points.size() - 1);
+                    if (points.size() < 3)
+                        return std::nullopt;
+                }
+                else if (word == "material:")
+                {
+                    gotMaterial = true;
+                    std::string type;
+                    if (!(is >> type) || !(is >> word))
+                        return std::nullopt;
+                    if (word == "{") {
+                        material = parseMaterial(type);
+                    }
+                    else {
+                        material = findMaterial(type);
+                        readNextWord = false;
+                    }
+                }
+            } while (!gotOrigin || !gotReference || !gotNormal
+                     || !gotPoints || !gotMaterial);
+            if (!material) return std::nullopt;
+            scene.objects.objects.emplace_back(
+                std::make_shared<Polygon>(normal, origin, reference, points),
+                material
             );
             getline(is, word);
         }

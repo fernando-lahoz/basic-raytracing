@@ -15,7 +15,7 @@
 enum class Algorithm {photon_mapping, path_tracing};
 
 static constexpr std::string_view helpStr = R"(
-Usage: ./renderer [OTPION...] SCENE_FILE OUTPUT_FILE
+Usage: ./renderer [OPTION...] SCENE_FILE OUTPUT_FILE
 
   -d, --dimensions=WIDTH:HEIGTH    Set dimensions of the image.
                                    Default size is 256x256.
@@ -154,7 +154,7 @@ struct Arguments
 
     // Path tracing parameters
     Natural paths_per_pixel = 100; // Depends on algorithm: pt -> 100 / pm -> 10
-    PathTracing::Strategy path_tracing_strategy;
+    PathTracing::Strategy path_tracing_strategy = PathTracing::Strategy::recursive;
     
     // Photon mapping parameters
     bool photon_mapping_use_next_event_estimation = false;

@@ -2,40 +2,44 @@
 
 #include "shapes/plane.hpp"
 
-#include <array>
+#include <vector>
 
 struct FlatPoint
 {
     Real x, y;
 };
 
-template <Index N>
 class PolygonBorder
 {
-static_assert(N >= 3, "Polygon must have at least 3 vertices.");
 protected:  
-    std::array<Point, N> vertices;
+    std::vector<Point> vertices;
 public:
     inline bool isInside(const Point p, const LimitedPlane<PolygonBorder>& plane) const
     {
-        //TODO
+        Index size = vertices.size();
+        for (Index i : numbers::range(0, size))
+        {
+            const auto dir = cross(vertices[(i + 1) % size] - vertices[i], plane.n);
+            if (dot(dir, (p - vertices[i])) < 0)
+                return false;
+        }
         return true;
     }
     
-    friend LimitedPlane<PolygonBorder<N>>;
+    friend class Polygon;
 };
 
-CHECK_BORDER_CONCEPT(PolygonBorder<3>)
+CHECK_BORDER_CONCEPT(PolygonBorder)
 
 /* Represents a convex polygon. */
-template <Index N>
-class Polygon : public LimitedPlane<PolygonBorder<N>>
+
+class Polygon : public LimitedPlane<PolygonBorder>
 {
 public:
-    Polygon(Direction normal, Point origin, Point reference,
-            const std::array<FlatPoint, N>& points, Color color)
+    inline Polygon(Direction normal, Point origin, Point reference,
+            const std::vector<FlatPoint>& points)
         
-        : LimitedPlane<PolygonBorder<N>>{origin, normal, PolygonBorder<N>{}, color}
+        : LimitedPlane<PolygonBorder>{origin, normal, PolygonBorder{}}
     {
         const Direction k = Plane::n;
         const Direction j = normalize(cross(k, reference - origin));
@@ -43,10 +47,11 @@ public:
         Transformation planeToScene;
         planeToScene.revertBase({i, j, k, origin});
 
-        for (Index v : numbers::range(0, N))
+        for (Index v : numbers::range(0, points.size()))
         {
             const auto[x, y] = points[v];
-            this->border.vertices[v] = planeToScene * Point{x, y, 0};
+            this->border.vertices.emplace_back(planeToScene * Point{x, y, 0});
         }
+        this->border.vertices.shrink_to_fit();
     }
 };

@@ -36,7 +36,7 @@ public:
     virtual Real intersect(const Ray& ray) const override
     {
         const auto t = Plane::intersect(ray);
-        if (!border.isInside(ray.hitPoint(t), *this))
+        if (border.isInside(ray.hitPoint(t), *this))
             return t;
         return Ray::nohit;
     }

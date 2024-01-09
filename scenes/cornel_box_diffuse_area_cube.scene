@@ -1,0 +1,113 @@
+# Cornell Box with two diffuse spheres lit by an area light.
+
+Camera {
+    focus: 0 0 -3.5
+    front: 0 0 3
+    up: 0 1 0
+}
+
+# Materiales
+cristal = Shade {
+    refractive: 0.9 0.9 0.9
+    ior: 1.5
+}
+violet = Shade {
+    diffuse: 0.7 0.575 0.8
+}
+
+# Left Cube
+## Top face
+Polygon {
+    normal: 0 1 0
+    origin: 0.8 -0.4 0.55
+    reference: 0.8 -0.4 -1
+    points: [0 0] [0 0.6] [0.6 0.6] [0.6 0]
+    material: violet
+}
+## Left face
+Polygon {
+    normal: 1 0 0
+    origin: 0.8 -0.4 0.55
+    reference: 0.8 -1 0.55
+    points: [0 0] [0 0.6] [0.6 0.6] [0.6 0]
+    material: violet
+}
+## Back face
+Polygon {
+    normal: 0 0 1
+    origin: 0.8 -0.4 0.55
+    reference: -1 -0.4 0.55
+    points: [0 0] [0 0.6] [0.6 0.6] [0.6 0]
+    material: violet
+}
+## Front face
+Polygon {
+    normal: 0 0 -1
+    origin: 0.2 -1 -0.05
+    reference: 0.2 1 -0.05
+    points: [0 0] [0 0.6] [0.6 0.6] [0.6 0]
+    material: violet
+}
+## Right face
+Polygon {
+    normal: -1 0 0
+    origin: 0.2 -1 -0.05
+    reference: 0.2 -1 1
+    points: [0 0] [0 0.6] [0.6 0.6] [0.6 0]
+    material: violet
+}
+
+# Right Sphere
+Sphere {
+    center: -0.5 -0.7 -0.25
+    radius: 0.3
+    material: Shade {
+        diffuse: 0.5 0.9 0.9
+    }
+}
+
+# Left Plane
+Plane {
+    point: 1 0 0
+    normal: -1 0 0
+    material: Shade {
+        diffuse: 0.8 0 0
+    }
+}
+
+# Right Plane
+Plane {
+    point: -1 0 0
+    normal: 1 0 0
+    material: Shade {
+        diffuse: 0 0.8 0
+    }
+}
+
+# Material
+white_wall = Shade {
+    diffuse: 0.9 0.9 0.9
+}
+
+# Floor Plane
+Plane {
+    point: 0 -1 0
+    normal: 0 1 0
+    material: white_wall
+}
+
+# Back Plane
+Plane {
+    point: 0 0 1
+    normal: 0 0 -1
+    material: white_wall
+}
+
+# Ceiling Plane
+Plane {
+    point: 0 1 0
+    normal: 0 -1 0
+    material: Shade {
+        emission: 1 1 1
+    }
+}
