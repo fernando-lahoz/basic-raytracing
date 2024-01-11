@@ -14,7 +14,6 @@ public:
     virtual Real operator()(const Image &img, Real v) const = 0;
 };
 
-//Capar a partir de 1
 class Clamping : public ToneMappingStrategy
 {
 private:
@@ -29,7 +28,6 @@ public:
     constexpr static Index nParams = 1;
 };
 
-// Regla de 3 con el valor más alto
 class Equalization : public ToneMappingStrategy
 {
 public:
@@ -39,7 +37,6 @@ public:
     constexpr static Natural nParams = 0;
 };
 
-// Elegir un valor como el máximo
 class Equalization_Clamping : public ToneMappingStrategy
 {
 private:

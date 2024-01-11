@@ -43,28 +43,16 @@ public:
         operator RGBPixel () const;
     };
 
-    /**
-     * @brief Size in pixels of this image. Equivalent to `width * height`.
-     * 
-     * @return Number of pixels in this image.
-     */
+    // Size in pixels of this image. Equivalent to `width * height`.
     Index pixels() const;
 
-    /**
-     * @return This image dimensions: `{ width, height }`.
-     */
+    // This image dimensions: `{ width, height }`.
     Dimensions dimensions() const;
 
-    /**
-     * @return Max value of luminance inside this image.
-     */
+    // Max value of luminance inside this image.
     Real luminance() const;
 
-    /**
-     * @brief Updates the maximum luminance value within the image.
-     * 
-     * @return Max value of luminance inside this image after the update.
-     */
+    // Updates the maximum luminance value within the image and returns it.
     Real updateLuminance();
 
     Natural resolution() const;

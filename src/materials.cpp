@@ -83,7 +83,6 @@ Material::Evaluation Material::eval(const Point& hit, const Ray& wIn, Ray& wOut,
     }
     else if (x - pd - ps <= pt)
     {   
-        //std::cout << "Refraction!\n";
         setWOut(perfectSpecularRefraction(normal, wIn.d, index));
         return {_kt / pt, Component::kt};
     }

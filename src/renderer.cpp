@@ -507,7 +507,7 @@ int main(int argc, char* argv[])
     if (!writer)
         program::exit(program::err(), "Could not open destination file or format not available.");
     
-    auto render = [&](std::function<void(void)> renderFunc)
+    auto render = [&](auto renderFunc)
     {
         const auto seconds = measure(renderFunc);
 

@@ -118,8 +118,6 @@ public:
     [[nodiscard]] Point operator*(Point p);
     [[nodiscard]] Direction operator*(Direction d);
 
-    //CONSTRUCTOR_WRAPPER(Transformation, Inverse)
-
     friend std::ostream& operator<<(std::ostream& os, const Transformation& t);
 };
 
