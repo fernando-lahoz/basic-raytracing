@@ -1,0 +1,125 @@
+Camera {
+    focus: 0 0 -3.5
+    front: 0 0 3
+    up: 0 1 0
+}
+
+plastic = Shade {
+    diffuse: 0.3 0.6 0.6
+    specular: 0.3 0.3 0.3
+}
+
+# Left Cube
+## Top face
+Polygon {
+    normal: 0 1 0
+    origin: 0.8 -0.4 0.55
+    reference: 0.8 -0.4 -1
+    points: [0 0] [0 0.6] [0.6 0.6] [0.6 0]
+    material: plastic
+}
+## Left face
+Polygon {
+    normal: 1 0 0
+    origin: 0.8 -0.4 0.55
+    reference: 0.8 -1 0.55
+    points: [0 0] [0 0.6] [0.6 0.6] [0.6 0]
+    material: plastic
+}
+## Back face
+Polygon {
+    normal: 0 0 1
+    origin: 0.8 -0.4 0.55
+    reference: -1 -0.4 0.55
+    points: [0 0] [0 0.6] [0.6 0.6] [0.6 0]
+    material: plastic
+}
+## Front face
+Polygon {
+    normal: 0 0 -1
+    origin: 0.2 -1 -0.05
+    reference: 0.2 1 -0.05
+    points: [0 0] [0 0.6] [0.6 0.6] [0.6 0]
+    material: plastic
+}
+## Right face
+Polygon {
+    normal: -1 0 0
+    origin: 0.2 -1 -0.05
+    reference: 0.2 -1 1
+    points: [0 0] [0 0.6] [0.6 0.6] [0.6 0]
+    material: plastic
+}
+
+# Right Sphere
+Sphere {
+    center: -0.5 -0.7 -0.25
+    radius: 0.3
+    material: Shade {
+        specular: 0.25 0.25 0.25
+        refractive: 0.75 0.75 0.75
+        ior: 1.5
+    }
+}
+
+# Left Plane
+Plane {
+    point: 1 0 0
+    normal: -1 0 0
+    material: Shade {
+        diffuse: 0.8 0 0
+    }
+}
+
+# Right Plane
+Plane {
+    point: -1 0 0
+    normal: 1 0 0
+    material: Shade {
+        diffuse: 0 0.8 0
+    }
+}
+
+# Material
+white_wall = Shade {
+    diffuse: 0.9 0.9 0.9
+}
+
+# Floor Plane
+Plane {
+    point: 0 -1 0
+    normal: 0 1 0
+    material: white_wall
+}
+
+# Back Plane
+Plane {
+    point: 0 0 1
+    normal: 0 0 -1
+    material: white_wall
+}
+
+# Ceiling Plane -> Area light
+Plane {
+    point: 0 1 0
+    normal: 0 -1 0
+    material: white_wall
+}
+
+# Disk light
+Disk {
+    center: 0 0.999 0
+    normal: 0 -1 0
+    radius: 0.8
+    material: Shade {
+        emission: 1 1 1
+    }
+}
+
+# Disk
+Disk {
+    center: 0 0.998 0
+    normal: 0 -1 0
+    radius: 0.4
+    material: white_wall
+}

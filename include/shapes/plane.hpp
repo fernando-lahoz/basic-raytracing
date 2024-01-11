@@ -29,14 +29,15 @@ class LimitedPlane : public Plane
 {
 protected:
     BorderTy border;
+    bool isSolid;
 public:
-    LimitedPlane(Point reference, Direction normal, BorderTy border)
-        : Plane{reference, normal}, border{border} {}
+    LimitedPlane(Point reference, Direction normal, BorderTy border, bool solid)
+        : Plane{reference, normal}, border{border}, isSolid{solid} {}
 
     virtual Real intersect(const Ray& ray) const override
     {
         const auto t = Plane::intersect(ray);
-        if (border.isInside(ray.hitPoint(t), *this))
+        if (border.isInside(ray.hitPoint(t), *this) == isSolid)
             return t;
         return Ray::nohit;
     }

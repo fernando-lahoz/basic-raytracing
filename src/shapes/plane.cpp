@@ -10,8 +10,6 @@ Real Plane::intersect(const Ray& ray) const
 
     const auto t = (dot(n, o - p)) / nd;
     return t;
-    // if (t < 0) return Ray::nohit;
-    // else return t;
 }
 
 Shape::Normal Plane::normal(const Direction d, const Point) const

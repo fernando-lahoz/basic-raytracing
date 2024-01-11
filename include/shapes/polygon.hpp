@@ -37,9 +37,9 @@ class Polygon : public LimitedPlane<PolygonBorder>
 {
 public:
     inline Polygon(Direction normal, Point origin, Point reference,
-            const std::vector<FlatPoint>& points)
+            const std::vector<FlatPoint>& points, bool solid)
         
-        : LimitedPlane<PolygonBorder>{origin, normal, PolygonBorder{}}
+        : LimitedPlane<PolygonBorder>{origin, normal, PolygonBorder{}, solid}
     {
         const Direction k = Plane::n;
         const Direction j = normalize(cross(k, reference - origin));

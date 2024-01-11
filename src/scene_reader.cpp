@@ -298,6 +298,7 @@ std::optional<Scene> makeSceneFromFile(std::string_view file_name)
             Point center;
             Real radius = 0;
             Direction normal;
+            bool solid = true;
             std::shared_ptr<const Material> material;
             bool readNextWord = true;
             bool gotCenter = false, gotRadius = false, gotNormal = false, gotMaterial = false;
@@ -323,6 +324,15 @@ std::optional<Scene> makeSceneFromFile(std::string_view file_name)
                     if (!parseVec(normal))
                         return std::nullopt;
                 }
+                else if (word == "solid:")
+                {
+
+                    if (!(is >> word))
+                        return std::nullopt;
+                    if (word == "true") solid = true;
+                    else if (word == "false") solid = false;
+                    else return std::nullopt;
+                }
                 else if (word == "material:")
                 {
                     gotMaterial = true;
@@ -340,7 +350,7 @@ std::optional<Scene> makeSceneFromFile(std::string_view file_name)
             } while (!gotCenter || !gotRadius || !gotNormal || !gotMaterial);
             if (!material) return std::nullopt;
             scene.objects.objects.emplace_back(
-                std::make_shared<Disk>(normal, center, radius), material
+                std::make_shared<Disk>(normal, center, radius, solid), material
             );
             getline(is, word);
         }
@@ -348,6 +358,7 @@ std::optional<Scene> makeSceneFromFile(std::string_view file_name)
         {
             Point origin, reference;
             Direction normal;
+            bool solid = true;
             std::vector<FlatPoint> points;
             std::shared_ptr<const Material> material;
             bool readNextWord = true;
@@ -386,6 +397,14 @@ std::optional<Scene> makeSceneFromFile(std::string_view file_name)
                     if (points.size() < 3)
                         return std::nullopt;
                 }
+                else if (word == "solid:")
+                {
+                    if (!(buffer >> word))
+                        return std::nullopt;
+                    if (word == "true") solid = true;
+                    else if (word == "false") solid = false;
+                    else return std::nullopt;
+                }
                 else if (word == "material:")
                 {
                     gotMaterial = true;
@@ -404,7 +423,7 @@ std::optional<Scene> makeSceneFromFile(std::string_view file_name)
                      || !gotPoints || !gotMaterial);
             if (!material) return std::nullopt;
             scene.objects.objects.emplace_back(
-                std::make_shared<Polygon>(normal, origin, reference, points),
+                std::make_shared<Polygon>(normal, origin, reference, points, solid),
                 material
             );
             getline(is, word);

@@ -64,8 +64,6 @@ void castPhotonToScene(const ObjectSet& objSet, const Ray& ray,
     const auto& shape = hitObj->shape();
     const auto& material = hitObj->material();
 
-    // if emits ?? -> shouldn't be any area light
-
     const auto hit = ray.hitPoint(t);
     const auto normal = shape.normal(ray.d, hit);
 
@@ -138,9 +136,9 @@ Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
             return castRayToScene<PhotonTy>(objSet, secondaryRay, map, random, radius, numPhotons, nextEvent, russianRoulette);
         case Material::Component::ka:
         case Material::Component::kd:
-            auto nearest = map.nearest_neighbors(hit, numPhotons, radius); // Preguntar por estos valores
-            // uniform kernel
-
+            auto nearest = map.nearest_neighbors(hit, numPhotons, radius);
+            
+            // Estimation using box kernel
             Color sum;
             Index count = 0;
             for (const PhotonTy* photon : nearest)
@@ -151,7 +149,7 @@ Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
                 sum = sum + photon->flux * material.kd();
                 count++;
             }
-            sum = sum / (radius * radius * numbers::pi * numbers::pi);// * (nearest.size() / count);
+            sum = sum / (radius * radius * numbers::pi * numbers::pi);
             return sum;
         }
     }
@@ -159,10 +157,9 @@ Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
 
     const auto [rd, rs, rt, pd, ps, pt] = material.sampleAll(hit, ray, normal, random);
 
-    if (normal.side == Shape::Side::in) //parche imperfecto -> usar puntero a figura o mejor kt?? + parchear en path tracing
-    {
+    // Always exit out of transmisor if ray hits from inside
+    if (normal.side == Shape::Side::in)
         return castRayToScene<PhotonTy>(objSet, rt, map, random, radius, numPhotons, nextEvent, russianRoulette);
-    }
 
     Color cd, cs, ct;
     if (ps > 0.001)
@@ -173,53 +170,16 @@ Color castRayToScene(const ObjectSet& objSet, const Ray& ray,
     if (pd > 0.001)
     {
         auto nearest = map.nearest_neighbors(hit, numPhotons, radius);
-        Index count = 0;
-
-        Real sumOfWeights = 0;
-        for (const PhotonTy* photon : nearest)
-        {
-            const Real r = norm(hit - photon->position);
-            const Real weight = (radius - r) / radius;
-            sumOfWeights += weight;
-        }
-        
-        //std::cout << "sumOfWeights: " << sumOfWeights << '\n';
 
         for (const PhotonTy* photon : nearest)
         {
             if constexpr (std::same_as<PhotonTy, SPhoton>)
                 if (photon->shape != &shape)
                     continue;
-#if 0
-//UNIFORM KERNEL
             cd = cd + photon->flux * material.kd();
-            count++;
         }
         cd = cd / (radius * radius * numbers::pi * numbers::pi);
-#elif 1
-//CONE KERNEL
 
-            const Real r = norm(hit - photon->position);
-            const Real weight = (radius - r) / (radius);
-            cd = cd + photon->flux * material.kd() * weight;
-            count++;
-        }
-        
-        cd = cd / (radius * radius * radius * numbers::pi * numbers::pi);// * (nearest.size() / count);
-        //std::cout << "cd: " << cd << '\n';
-#elif 1
-//GAUSSIAN KERNEL
-
-            const Real r = norm(hit - photon->position);
-            const Real weight = (radius - r) / (radius);
-            cd = cd + photon->flux * material.kd() * weight;
-            count++;
-        }
-        
-        cd = cd / (radius * radius * radius * numbers::pi * numbers::pi);// * (nearest.size() / count);
-        //std::cout << "cd: " << cd << '\n';
-
-#endif
         if (nextEvent) 
             cd = cd + castShadowRays(objSet, normal.normal, hit, material.kd());
     }
@@ -306,10 +266,10 @@ renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
     std::cout << "Algorithm: photon mapping\n";
     std::cout << "Worker pool size: " << numThreads() << "\n\n";
 
-    TextProgressBar progressBar;
+    TextProgressBar progressBar {std::cout}; 
 
     std::cout << "Casting photons into the scene...\n";
-    progressBar.launch();
+    progressBar.launch(true /*clear-on-end*/);
 
     const auto photonsPerLight = dividePhotonsByPower(objects, totalPhotons);
 
@@ -348,7 +308,6 @@ renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
             progressBar.incrementProgress(Real(mapped - preMapped) / totalPhotons);
         }
 
-        // Maybe this is fine   ???
         for (auto& p : lightRegister)
             p.flux = p.flux / casted;
         
@@ -358,7 +317,7 @@ renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
         photonsInList += mapped;
     }
 
-    progressBar.stop(true);
+    progressBar.stop();
     progressBar.join();
     
     std::cout << jump_to_previous_line;
@@ -373,7 +332,7 @@ renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
 
     std::cout << "Reading light from the scene...\n";
     std::cout.flush();
-    progressBar.launch();
+    progressBar.launch(true);
     
     const Real totalSize = taskDivider.width * taskDivider.height;
     const Real regionSize = taskDivider.regionWidth * taskDivider.regionHeight;
@@ -393,7 +352,7 @@ renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
     for (auto& worker : threadPool)
         worker.join();
 
-    progressBar.stop(true);
+    progressBar.stop();
     progressBar.join();
     
     std::cout << jump_to_previous_line;
@@ -406,7 +365,8 @@ renderSpecialized(const Camera& cam, Image& img, const ObjectSet& objects,
 
 void PhotonMapping::Renderer::
 render(const Camera& cam, Image& img, const ObjectSet& objects,
-        Index ppp, Index totalPhotons, Real evalRadius, Index evalNumPhotons, bool nextEventEstimation,
+        Index ppp, Index totalPhotons, Real evalRadius,
+        Index evalNumPhotons, bool nextEventEstimation,
         bool onlyCountSameShapePhotons, bool russianRoulette)
 {
     if (onlyCountSameShapePhotons)

@@ -25,7 +25,7 @@ private:
     void updaterRoutine();
     
 public:
-    TextProgressBar();
+    TextProgressBar(std::ostream& out);
 
     float readProgress();
 
@@ -33,9 +33,9 @@ public:
 
     void incrementProgress(float increment);
 
-    void stop(bool clear = false);
+    void stop();
 
-    void launch(bool detach = false);
+    void launch(bool clearOnEnd, bool detach = false);
 
     void join();
 };

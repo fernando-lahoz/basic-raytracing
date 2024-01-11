@@ -163,7 +163,7 @@ render(const Camera& cam, Image& img,
     const Real regionSize = taskDivider.regionWidth * taskDivider.regionHeight;
     const Real increment = regionSize / totalSize;
 
-    TextProgressBar progressBar;
+    TextProgressBar progressBar {std::cout};
 
     leader = std::thread(leaderRoutine, 
             std::ref(tasks), std::ref(taskDivider));
@@ -175,7 +175,7 @@ render(const Camera& cam, Image& img,
     }
 
     std::cout << "Rendering...\n";
-    progressBar.launch();
+    progressBar.launch(true);
 
     leader.join();
     for (auto& worker : threadPool)

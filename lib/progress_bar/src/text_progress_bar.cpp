@@ -1,7 +1,7 @@
 #include "progress_bar/text_progress_bar.hpp"
 
-TextProgressBar::TextProgressBar()
-    : barWidth{40}, os{std::cout}
+TextProgressBar::TextProgressBar(std::ostream& out)
+    : barWidth{40}, os{out}
 {}
 
 float TextProgressBar::readProgress()
@@ -28,18 +28,19 @@ void TextProgressBar::incrementProgress(float increment)
     waitingChanges.notify_one();
 }
 
-void TextProgressBar::stop(bool clear)
+void TextProgressBar::stop()
 {
     std::unique_lock<std::mutex> lock(mtx);
     this->end = true;
-    this->clear = clear;
     waitingChanges.notify_one();
 }
 
-void TextProgressBar::launch(bool detach)
+void TextProgressBar::launch(bool clearOnEnd, bool detach)
 {
+    std::unique_lock<std::mutex> lock(mtx);
     progress_ = 0;
     end = false;
+    clear = clearOnEnd;
     updater = std::thread{[&](){this->updaterRoutine();}};
     if (detach)
         updater.detach();
@@ -93,7 +94,7 @@ void TextProgressBar::updaterRoutine()
 
             timepointPrev = timepoint;
         }
-    } while (progress > 0);
+    } while (!end);
 
     printBar(1.0f, FormatedTime{});
     if (clear)

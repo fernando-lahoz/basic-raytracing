@@ -16,8 +16,8 @@ CHECK_BORDER_CONCEPT(DiskBorder)
 class Disk : public LimitedPlane<DiskBorder>
 {
 public:
-    Disk(Direction normal, Point center, Real radius)
-        : LimitedPlane{center, normal, DiskBorder{radius}} {}
+    Disk(Direction normal, Point center, Real radius, bool solid)
+        : LimitedPlane{center, normal, DiskBorder{radius}, solid} {}
 };
 
 #include "shapes/disk.ipp"
