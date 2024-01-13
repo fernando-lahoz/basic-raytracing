@@ -399,7 +399,7 @@ std::optional<Scene> makeSceneFromFile(std::string_view file_name)
                 }
                 else if (word == "solid:")
                 {
-                    if (!(buffer >> word))
+                    if (!(is >> word))
                         return std::nullopt;
                     if (word == "true") solid = true;
                     else if (word == "false") solid = false;

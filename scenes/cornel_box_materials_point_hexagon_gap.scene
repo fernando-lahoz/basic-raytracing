@@ -1,0 +1,138 @@
+# Cornell Box with two diffuse spheres lit by an area light.
+
+Camera {
+    focus: 0 -0.75 -3.5
+    front: 0 0 3
+    up: 0 0.5 0
+}
+
+# Left Sphere
+Sphere {
+    center: 0.5 -0.7 0.25
+    radius: 0.3
+    material: Shade {
+        diffuse: 0.3 0.6 0.6
+        specular: 0.3 0.3 0.3
+    }
+}
+
+# Right Sphere
+Sphere {
+    center: -0.5 -0.7 -0.25
+    radius: 0.3
+    material: Shade {
+        specular: 0.25 0.25 0.25
+        refractive: 0.75 0.75 0.75
+        ior: 1.5
+    }
+}
+
+# Left Plane
+Plane {
+    point: 1 0 0
+    normal: -1 0 0
+    material: Shade {
+        diffuse: 0.8 0 0
+    }
+}
+
+# Right Plane
+Plane {
+    point: -1 0 0
+    normal: 1 0 0
+    material: Shade {
+        diffuse: 0 0.8 0
+    }
+}
+
+# Material
+white_wall = Shade {
+    diffuse: 0.9 0.9 0.9
+}
+
+# Floor Plane
+Plane {
+    point: 0 -1 0
+    normal: 0 1 0
+    material: white_wall
+}
+
+# Back Plane
+Plane {
+    point: 0 0 1
+    normal: 0 0 -1
+    material: white_wall
+}
+
+# Ceiling Plane
+Plane {
+    point: 0 1 0
+    normal: 0 -1 0
+    material: white_wall
+}
+
+Light {
+    point: 0 0.5 0
+    emission: 1 1 1
+}
+
+# Hexagon
+Polygon {
+    normal: 0 -1 0
+    origin: 0 -0.299999 0
+    reference: 1 0 0
+    points: [-0.4 0.6928203230275509] [0.4 0.6928203230275509] [0.8 0] [0.4 -0.6928203230275509] [-0.4 -0.6928203230275509] [-0.8 0]
+    solid: false
+    material: Shade {
+        diffuse: 0 0 0
+    }
+}
+
+# Hexagon
+Polygon {
+    normal: 0 -1 0
+    origin: 0 -0.3 0
+    reference: 1 0 0
+    points: [-0.4 0.6928203230275509] [0.4 0.6928203230275509] [0.8 0] [0.4 -0.6928203230275509] [-0.4 -0.6928203230275509] [-0.8 0]
+    solid: false
+    material: white_wall
+}
+
+# Material
+black_wall = Shade {
+    diffuse: 0.2 0.2 0.2
+}
+
+# Cover
+## Left face
+Polygon {
+    normal: -1 0 0
+    origin: 0.8 -0.3 -10
+    reference: 0 -0.3 1
+    points: [0 0] [0 100] [100 100] [100 0]
+    material: black_wall
+}
+## Right face
+Polygon {
+    normal: 1 0 0
+    origin: -0.8 -0.3 10
+    reference: 0 -0.3 1
+    points: [0 0] [0 100] [100 100] [100 0]
+    material: black_wall
+}
+## Back face
+Polygon {
+    normal: 0 0 -1
+    origin: 10 -0.3 0.8
+    reference: -100 -0.3 0
+    points: [0 0] [0 100] [100 100] [100 0]
+    material: black_wall
+}
+## Front face
+Polygon {
+    normal: 0 0 -1
+    origin: 10 -0.3 -0.8
+    reference: -100 -0.3 0
+    points: [0 0] [0 100] [100 100] [100 0]
+    material: black_wall
+}
