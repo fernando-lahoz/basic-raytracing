@@ -6,8 +6,8 @@ have **not** been tested. The compilation process requires `cmake`.
 
 Clone this repository:
 ```shell
-git clone https://github.com/fernando-lahoz/informatica-grafica.git
-cd informatica-grafica
+git clone https://github.com/fernando-lahoz/basic-raytracing.git
+cd basic-raytracing
 ```
 Set up the CMake project:
 ```shell
